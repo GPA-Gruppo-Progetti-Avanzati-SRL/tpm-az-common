@@ -2,6 +2,7 @@ package coslks
 
 import (
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosutil"
 )
 
 type LinkedService struct {
@@ -19,6 +20,10 @@ func (lks *LinkedService) DbName() string {
 
 func (lks *LinkedService) CollectionName(cId string) string {
 	return lks.cfg.GetCollectionName(cId)
+}
+
+func (lks *LinkedService) ConnectionString() string {
+	return cosutil.ConnectionStringFromEndpointAndAccountKey(lks.cfg.Endpoint, lks.cfg.AccountKey)
 }
 
 func (lks *LinkedService) NewClient() (*azcosmos.Client, error) {
