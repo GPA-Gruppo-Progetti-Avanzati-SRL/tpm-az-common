@@ -1,0 +1,1 @@
+# tpm-az-common
