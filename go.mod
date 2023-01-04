@@ -1,4 +1,4 @@
-module tpm-az-common
+module github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common
 
 go 1.19
 

@@ -3,11 +3,11 @@ package cosquery
 import (
 	"errors"
 	"fmt"
+	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosutil"
 	"github.com/btnguyen2k/gocosmos"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
 	"time"
-	"tpm-az-common/cosmosdb/cosutil"
 )
 
 const DefaultThrottleThinkTime = 2

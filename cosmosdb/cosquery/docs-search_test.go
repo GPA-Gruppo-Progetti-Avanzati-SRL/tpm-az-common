@@ -1,6 +1,7 @@
 package cosquery_test
 
 import (
+	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosquery"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"testing"
 	"time"
-	"tpm-az-common/cosmosdb/cosquery"
 )
 
 const (
