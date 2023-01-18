@@ -12,7 +12,7 @@ type KeyNamePair struct {
 type CollectionsCfg []KeyNamePair
 
 type Config struct {
-	Endpoint    string         `yaml:"endpoint" mapstructure:"endpoint" json:"endpoint"`
+	Endpoint    string         `mapstructure:"endpoint" yaml:"endpoint" json:"endpoint"`
 	AccountKey  string         `yaml:"account-key" mapstructure:"account-key" json:"account-key"`
 	DB          KeyNamePair    `yaml:"db" mapstructure:"db" json:"db"`
 	Collections CollectionsCfg `yaml:"collections" mapstructure:"collections" json:"collections"`
