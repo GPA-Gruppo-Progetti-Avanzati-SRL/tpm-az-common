@@ -401,7 +401,7 @@ func (az *AzBlobLinkedService) ListBlobByTag(cntName string, tagName, tagValue s
 	return rl, nil
 }
 
-func (az *AzBlobLinkedService) SetBlobTags(blobInfo BlobInfo) error {
+func (az *AzBlobLinkedService) SetBlobTags(blobInfo BlobInfo, leaseId string) error {
 	blobClient := az.Client.ServiceClient().NewContainerClient(blobInfo.ContainerName).NewBlobClient(blobInfo.BlobName)
 
 	var newTags map[string]string
@@ -412,7 +412,14 @@ func (az *AzBlobLinkedService) SetBlobTags(blobInfo BlobInfo) error {
 		newTags[bi.Key] = bi.Value
 	}
 
-	_, err := blobClient.SetTags(context.Background(), newTags, &blob.SetTagsOptions{})
+	opts := blob.SetTagsOptions{}
+	if leaseId != "" {
+		opts.AccessConditions = &blob.AccessConditions{LeaseAccessConditions: &blob.LeaseAccessConditions{
+			LeaseID: &leaseId,
+		}}
+	}
+
+	_, err := blobClient.SetTags(context.Background(), newTags, &opts)
 	if err != nil {
 		return azblobutil.MapError2AzBlobError(err)
 	}

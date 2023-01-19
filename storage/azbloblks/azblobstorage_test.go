@@ -128,12 +128,16 @@ func TestAcquireBlob(t *testing.T) {
 	leaseId, err := azb.AcquireLease(TargetContainer, blobName, 30)
 	require.NoError(t, err)
 
-	for i := 0; i <= 6; i++ {
+	for i := 0; i <= 20; i++ {
 		blobInfo, err = azb.GetBlobInfo(TargetContainer, blobName)
 		require.NoError(t, err)
 		t.Log(blobInfo)
 		t.Logf("[%d] sleeping....", i)
 		time.Sleep(20 * time.Second)
+
+		bi := azbloblks.BlobInfo{ContainerName: TargetContainer, BlobName: blobName, Tags: []azbloblks.BlobTag{{Key: "TAGleased", Value: fmt.Sprintf("tag-val-%d", i)}}}
+		err = azb.SetBlobTags(bi, leaseId)
+		require.NoError(t, err)
 
 		_, err = azb.RenewLease(TargetContainer, blobName, leaseId)
 		require.NoError(t, err)
