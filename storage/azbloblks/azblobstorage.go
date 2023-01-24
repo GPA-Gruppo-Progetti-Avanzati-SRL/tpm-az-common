@@ -18,6 +18,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -435,6 +436,8 @@ func IsBlobUrl(u string) bool {
 }
 
 func ParseBlobUrl(u string) (string, string, string, string, string, bool) {
+
+	const semLogContext = "parse-blob-url"
 	matches := StorageUrlPattern.FindStringSubmatch(u)
 	if len(matches) != 6 {
 		return "", "", "", "", "", false
@@ -448,7 +451,12 @@ func ParseBlobUrl(u string) (string, string, string, string, string, bool) {
 		queryString := matches[5]
 	*/
 	qs := strings.TrimLeft(matches[5], "?")
-	return matches[1], matches[2], matches[3], matches[4], qs, true
+	pathInfo, err := url.PathUnescape(matches[4])
+	if err != nil {
+		log.Error().Err(err).Msg(semLogContext)
+		return "", "", "", "", "", false
+	}
+	return matches[1], matches[2], matches[3], pathInfo, qs, true
 }
 
 func DownloadBlobFromPreSignedUrl(u string, span opentracing.Span) (BlobInfo, error) {

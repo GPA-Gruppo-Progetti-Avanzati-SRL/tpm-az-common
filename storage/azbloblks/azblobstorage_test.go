@@ -8,7 +8,6 @@ import (
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/storage/azstoragecfg"
 	"github.com/stretchr/testify/require"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -158,15 +157,9 @@ func TestAcquireBlob(t *testing.T) {
 	t.Log(blobInfo)
 }
 
-func TestSplit(t *testing.T) {
+func TestParseBlobUrl(t *testing.T) {
 
-	arr := strings.SplitN("/tmp/cpx-files/name", "/", 3)
-	fmt.Println(len(arr), arr[1])
-}
-
-func TestParseBlob(t *testing.T) {
-
-	u := `https://sgectngsa01azne.blob.core.windows.net/gect-cpx/documents/ee1983c7-3ecc-45c8-80ce-417e91ba3112/94d7cc11-2d0b-4edd-b7f2-1ef65caa0de5?se=2022-01-19T19%3A24%3A04Z&sig=1G5nN4xlSbC4XlJFadDJDZZNuhaElAbg2y5yxZwuEUE%3D&sp=r&spr=https&sr=b&st=2022-01-19T19%3A09%3A04Z&sv=2019-12-12`
+	u := `https://sgectngsa03azne.blob.core.windows.net/dms/378E978F-572C-4C4D-A849-32E70FFE715E.pdf?se=2023-01-24T11%3A19%3A12Z&sig=%2BIRHw%2BmxEA0tZC38XGZ3KZEnib9HwuwyaB1JghSmRvI%3D&sp=r&spr=https&sr=b&st=2023-01-24T11%3A04%3A12Z&sv=2019-12-12`
 	scheme, account, container, pathInfo, queryString, ok := azbloblks.ParseBlobUrl(u)
 	if ok {
 		t.Log(scheme, account, container, pathInfo, queryString)
@@ -183,9 +176,8 @@ func TestParseBlob(t *testing.T) {
 	}
 }
 
-func TestDownloadPresigned(t *testing.T) {
-
-	u := "https://sgectngsa01azne.blob.core.windows.net/gect/documents/ee1983c7-3ecc-45c8-80ce-417e91ba3112/94d7cc11-2d0b-4edd-b7f2-1ef65caa0de5?se=2022-01-19T21%3A24%3A26Z&sig=EmeFDwPk8UJNUEsanpn6j89ruf%2F8IEWVInDgz2etdos%3D&sp=r&spr=https&sr=b&st=2022-01-19T21%3A09%3A26Z&sv=2019-12-12"
+func TestDownloadPreSigned(t *testing.T) {
+	u := "https://sgectngsa01azne.blob.core.windows.net/gect/documents/0_2dab4d8e-15d1-4b59-87cb-95c30adf96f8/Bolletta+LUCE?se=2023-01-24T13%3A15%3A21Z&sig=Xfa1BFAhNw%2BIXrg18yf8EpkSvuZEjb9XOICzz99xZBo%3D&sp=r&spr=https&sr=b&st=2023-01-24T13%3A00%3A21Z&sv=2019-12-12"
 	info, err := azbloblks.DownloadBlobFromPreSignedUrl(u, nil)
 	require.NoError(t, err)
 
