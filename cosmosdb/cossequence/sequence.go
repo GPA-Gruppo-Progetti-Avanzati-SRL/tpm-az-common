@@ -81,9 +81,8 @@ func NextVal(ctx context.Context, client *azcosmos.ContainerClient, seqId string
 
 	patch := azcosmos.PatchOperations{}
 	patch.AppendIncrement("/value", 1)
-	patch.AppendAdd("/more2", "ciao")
-	patch.SetCondition("from c where c.id='TOK'")
-	opts := azcosmos.ItemOptions{EnableContentResponseOnWrite: true}
+	// patch.SetCondition("from c where c.id='TOK'")
+	opts := azcosmos.ItemOptions{ /* EnableContentResponseOnWrite: true */ }
 	resp, err := client.PatchItem(ctx, azcosmos.NewPartitionKeyString(seqId), seqId, patch, &opts)
 	if err != nil {
 		return -1, err
