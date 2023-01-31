@@ -26,8 +26,13 @@ func (lks *LinkedService) ConnectionString() string {
 	return cosutil.ConnectionStringFromEndpointAndAccountKey(lks.cfg.Endpoint, lks.cfg.AccountKey)
 }
 
-func (lks *LinkedService) NewClient() (*azcosmos.Client, error) {
+// NewClient the enableContentResponseOnWrite should be enabled if for example you need to do a patch operation and want the content back.
+func (lks *LinkedService) NewClient(enableContentResponseOnWrite bool) (*azcosmos.Client, error) {
 	cred, _ := azcosmos.NewKeyCredential(lks.cfg.AccountKey)
-	client, err := azcosmos.NewClientWithKey(lks.cfg.Endpoint, cred, nil)
+
+	opts := azcosmos.ClientOptions{
+		EnableContentResponseOnWrite: enableContentResponseOnWrite,
+	}
+	client, err := azcosmos.NewClientWithKey(lks.cfg.Endpoint, cred, &opts)
 	return client, err
 }

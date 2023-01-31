@@ -29,13 +29,18 @@ func TestSequence(t *testing.T) {
 	lks, err := coslks.NewInstanceWithConfig(cfg)
 	require.NoError(t, err)
 
-	c, err := lks.NewClient()
+	c, err := lks.NewClient(true)
 	require.NoError(t, err)
 
 	client, err := c.NewContainer(DbName, CollectionName)
 	require.NoError(t, err)
 
-	seqVal, err := cossequence.NextVal(context.Background(), client, "TOK")
+	seqVal, err := cossequence.NextValUpsert(context.Background(), client, "TOK")
+	require.NoError(t, err)
+
+	t.Logf("upsert result: %d", seqVal)
+
+	seqVal, err = cossequence.NextVal(context.Background(), client, "TOK")
 	require.NoError(t, err)
 
 	t.Logf("upsert result: %d", seqVal)

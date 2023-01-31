@@ -46,7 +46,8 @@ func (ctx *Sequence) Valid() bool {
 	return true
 }
 
-func NextVal(ctx context.Context, client *azcosmos.ContainerClient, seqId string) (int, error) {
+// NextValUpsert old next val with optimistic locking. The new default one is the one with patch operation.
+func NextValUpsert(ctx context.Context, client *azcosmos.ContainerClient, seqId string) (int, error) {
 
 	storedSeq, err := FindSequenceById(ctx, client, seqId)
 	if err != nil && err != cosutil.EntityNotFound {
@@ -74,6 +75,54 @@ func NextVal(ctx context.Context, client *azcosmos.ContainerClient, seqId string
 	}
 
 	return storedSeq.Value, nil
+}
+
+func NextVal(ctx context.Context, client *azcosmos.ContainerClient, seqId string) (int, error) {
+
+	patch := azcosmos.PatchOperations{}
+	patch.AppendIncrement("/value", 1)
+	patch.AppendAdd("/more2", "ciao")
+	patch.SetCondition("from c where c.id='TOK'")
+	opts := azcosmos.ItemOptions{EnableContentResponseOnWrite: true}
+	resp, err := client.PatchItem(ctx, azcosmos.NewPartitionKeyString(seqId), seqId, patch, &opts)
+	if err != nil {
+		return -1, err
+	}
+
+	e, err := DeserializeContext(resp.Value)
+	if err != nil {
+		return -1, err
+	}
+
+	return e.Value, nil
+
+	/*
+		if err != nil && err != cosutil.EntityNotFound {
+			return -1, err
+		}
+
+		if err != nil {
+			seq := Sequence{Id: seqId, Value: 1, Description: "next val generated"}
+			stSeq, err := InsertSequence(ctx, client, &seq)
+			if err != nil {
+				return -1, err
+			}
+
+			return stSeq.Value, nil
+		}
+
+		storedSeq.Sequence.Value++
+		ok, err := storedSeq.Upsert(ctx, client)
+		if err != nil {
+			return -1, err
+		}
+
+		if !ok {
+			panic("unexpected error")
+		}
+
+		return storedSeq.Value, nil
+	*/
 }
 
 func InsertSequence(ctx context.Context, client *azcosmos.ContainerClient, tokCtx *Sequence) (StoredSequence, error) {
