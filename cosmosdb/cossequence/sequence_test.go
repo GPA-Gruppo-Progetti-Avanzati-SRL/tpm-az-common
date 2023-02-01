@@ -35,14 +35,13 @@ func TestSequence(t *testing.T) {
 	client, err := c.NewContainer(DbName, CollectionName)
 	require.NoError(t, err)
 
-	seqVal, err := cossequence.NextValUpsert(context.Background(), client, "TOK")
+	seqVal, err := cossequence.NextValUpsert(context.Background(), client, cossequence.WithSeqId("TIK"))
 	require.NoError(t, err)
 
 	t.Logf("upsert result: %d", seqVal)
 
-	seqVal, err = cossequence.NextVal(context.Background(), client, "TOK")
+	seqVal, err = cossequence.NextVal(context.Background(), client, cossequence.WithSeqId("TAK"))
 	require.NoError(t, err)
 
 	t.Logf("upsert result: %d", seqVal)
-
 }

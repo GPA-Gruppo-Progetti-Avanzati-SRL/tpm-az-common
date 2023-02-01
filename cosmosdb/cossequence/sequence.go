@@ -3,12 +3,55 @@ package cossequence
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosutil"
 )
 
+const (
+	SequenceDefaultPKey              = "cos-sequence"
+	SequenceIdDefaultPrefix          = "seq:"
+	SequenceDefaultCreateDescription = "sequence missing and created"
+)
+
+type NextValOptions struct {
+	Pkey              string
+	SeqIdPrefix       string
+	SeqId             string
+	CreateIfMissing   bool
+	CreateDescription string
+}
+
+type NextValOption func(*NextValOptions)
+
+func WithPartitionKey(s string) NextValOption {
+	return func(opts *NextValOptions) {
+		opts.Pkey = s
+	}
+}
+
+func WithSeqId(s string) NextValOption {
+	return func(opts *NextValOptions) {
+		opts.SeqId = s
+	}
+}
+
+func WithSeqIdPrefix(s string) NextValOption {
+	return func(opts *NextValOptions) {
+		opts.SeqIdPrefix = s
+	}
+}
+
+func WithCreateIfMissing(b bool, d string) NextValOption {
+	return func(opts *NextValOptions) {
+		opts.CreateIfMissing = b
+		opts.CreateDescription = d
+	}
+}
+
 type Sequence struct {
+	PKey        string `yaml:"pkey,omitempty" mapstructure:"pkey,omitempty" json:"pkey,omitempty"`
 	Id          string `yaml:"id,omitempty" mapstructure:"id,omitempty" json:"id,omitempty"`
 	Description string `yaml:"description,omitempty" mapstructure:"description,omitempty" json:"description,omitempty"`
 	Value       int    `yaml:"value,omitempty" mapstructure:"value,omitempty" json:"value,omitempty"`
@@ -47,15 +90,25 @@ func (ctx *Sequence) Valid() bool {
 }
 
 // NextValUpsert old next val with optimistic locking. The new default one is the one with patch operation.
-func NextValUpsert(ctx context.Context, client *azcosmos.ContainerClient, seqId string) (int, error) {
+func NextValUpsert(ctx context.Context, client *azcosmos.ContainerClient, nextValOpts ...NextValOption) (int, error) {
 
-	storedSeq, err := FindSequenceById(ctx, client, seqId)
-	if err != nil && err != cosutil.EntityNotFound {
+	opts := NextValOptions{Pkey: SequenceDefaultPKey, SeqIdPrefix: SequenceIdDefaultPrefix, CreateIfMissing: true, CreateDescription: SequenceDefaultCreateDescription}
+	for _, o := range nextValOpts {
+		o(&opts)
+	}
+
+	opts.SeqId = fmt.Sprintf("%s%s", opts.SeqIdPrefix, opts.SeqId)
+	if opts.SeqId == "" || opts.Pkey == "" {
+		panic(fmt.Errorf("sequence missing core params - pkey: %s, id: %s", opts.Pkey, opts.SeqId))
+	}
+
+	storedSeq, err := FindSequenceById(ctx, client, opts.Pkey, opts.SeqId)
+	if err != nil && (err != cosutil.EntityNotFound || !opts.CreateIfMissing) {
 		return -1, err
 	}
 
 	if err != nil {
-		seq := Sequence{Id: seqId, Value: 1, Description: "next val generated"}
+		seq := Sequence{PKey: opts.Pkey, Id: opts.SeqId, Value: 1, Description: opts.CreateDescription}
 		stSeq, err := InsertSequence(ctx, client, &seq)
 		if err != nil {
 			return -1, err
@@ -77,15 +130,36 @@ func NextValUpsert(ctx context.Context, client *azcosmos.ContainerClient, seqId 
 	return storedSeq.Value, nil
 }
 
-func NextVal(ctx context.Context, client *azcosmos.ContainerClient, seqId string) (int, error) {
+func NextVal(ctx context.Context, client *azcosmos.ContainerClient, nextValOpts ...NextValOption) (int, error) {
+
+	opts := NextValOptions{Pkey: SequenceDefaultPKey, SeqIdPrefix: SequenceIdDefaultPrefix, CreateIfMissing: true, CreateDescription: SequenceDefaultCreateDescription}
+	for _, o := range nextValOpts {
+		o(&opts)
+	}
+
+	opts.SeqId = fmt.Sprintf("%s%s", opts.SeqIdPrefix, opts.SeqId)
+	if opts.SeqId == "" || opts.Pkey == "" {
+		panic(fmt.Errorf("sequence missing core params - pkey: %s, id: %s", opts.Pkey, opts.SeqId))
+	}
 
 	patch := azcosmos.PatchOperations{}
 	patch.AppendIncrement("/value", 1)
 	// patch.SetCondition("from c where c.id='TOK'")
-	opts := azcosmos.ItemOptions{ /* EnableContentResponseOnWrite: true */ }
-	resp, err := client.PatchItem(ctx, azcosmos.NewPartitionKeyString(seqId), seqId, patch, &opts)
+	itemOptions := azcosmos.ItemOptions{ /* EnableContentResponseOnWrite: true */ }
+	resp, err := client.PatchItem(ctx, azcosmos.NewPartitionKeyString(opts.Pkey), opts.SeqId, patch, &itemOptions)
 	if err != nil {
-		return -1, err
+		err = cosutil.MapAzCoreError(err)
+		if err != cosutil.EntityNotFound || !opts.CreateIfMissing {
+			return -1, err
+		}
+
+		seq := Sequence{PKey: opts.Pkey, Id: opts.SeqId, Value: 1, Description: opts.CreateDescription}
+		stSeq, err := InsertSequence(ctx, client, &seq)
+		if err != nil {
+			return -1, err
+		}
+
+		return stSeq.Value, nil
 	}
 
 	e, err := DeserializeContext(resp.Value)
@@ -125,7 +199,7 @@ func NextVal(ctx context.Context, client *azcosmos.ContainerClient, seqId string
 }
 
 func InsertSequence(ctx context.Context, client *azcosmos.ContainerClient, tokCtx *Sequence) (StoredSequence, error) {
-	resp, err := client.CreateItem(ctx, azcosmos.NewPartitionKeyString(tokCtx.Id), tokCtx.MustToJSON(), nil)
+	resp, err := client.CreateItem(ctx, azcosmos.NewPartitionKeyString(tokCtx.PKey), tokCtx.MustToJSON(), nil)
 	if err != nil {
 		return StoredSequence{}, cosutil.MapAzCoreError(err)
 	}
@@ -133,8 +207,8 @@ func InsertSequence(ctx context.Context, client *azcosmos.ContainerClient, tokCt
 	return StoredSequence{Sequence: tokCtx, ETag: resp.ETag}, nil
 }
 
-func FindSequenceById(ctx context.Context, client *azcosmos.ContainerClient, Name string) (StoredSequence, error) {
-	resp, err := client.ReadItem(ctx, azcosmos.NewPartitionKeyString(Name), Name, nil)
+func FindSequenceById(ctx context.Context, client *azcosmos.ContainerClient, seqPkey, Name string) (StoredSequence, error) {
+	resp, err := client.ReadItem(ctx, azcosmos.NewPartitionKeyString(seqPkey), Name, nil)
 	if err != nil {
 		return StoredSequence{nil, ""}, cosutil.MapAzCoreError(err)
 	}
@@ -151,7 +225,7 @@ func (e *StoredSequence) Upsert(ctx context.Context, client *azcosmos.ContainerC
 	}
 
 	opts := &azcosmos.ItemOptions{IfMatchEtag: &e.ETag}
-	resp, err := client.UpsertItem(ctx, azcosmos.NewPartitionKeyString(e.Id), b, opts)
+	resp, err := client.UpsertItem(ctx, azcosmos.NewPartitionKeyString(e.PKey), b, opts)
 	if err != nil {
 		return false, cosutil.MapAzCoreError(err)
 	}
