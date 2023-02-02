@@ -16,19 +16,18 @@ func ConnectionStringFromEndpointAndAccountKey(ep, acctKey string) string {
 var EntityAlreadyExists = errors.New("entity already exists")
 var EntityNotFound = errors.New("entity not found")
 var PreconditionFailed = errors.New("precondition failed")
+var InternalServerError = errors.New("internal server error")
 
 func GetErrorStatusAndMessage(err error) (int, string) {
-
-	const semLogContext = "az error: extracting status and error code"
-	log.Error().Err(err).Msg(semLogContext)
 	if respErr, ok := err.(*azcore.ResponseError); ok {
 		return respErr.StatusCode, respErr.ErrorCode
 	}
-
 	return 500, "InternalServerError"
 }
 
 func MapAzCoreError(err error) error {
+
+	const semLogContext = "az error: mapping az-core error"
 
 	var zeroLogEvt *zerolog.Event
 	st, msg := GetErrorStatusAndMessage(err)
@@ -43,10 +42,12 @@ func MapAzCoreError(err error) error {
 		zeroLogEvt = log.Warn()
 		err = PreconditionFailed
 	default:
+		err = InternalServerError
 		zeroLogEvt = log.Error()
+		zeroLogEvt = zeroLogEvt.Err(err)
 	}
 
-	zeroLogEvt.Int("http-status", st).Str("error-code", msg).Send()
+	zeroLogEvt.Int("http-status", st).Str("error-code", msg).Msg(semLogContext)
 	return err
 }
 
