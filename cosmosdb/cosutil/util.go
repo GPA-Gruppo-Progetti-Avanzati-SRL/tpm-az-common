@@ -1,7 +1,6 @@
 package cosutil
 
 import (
-	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/rs/zerolog"
@@ -13,16 +12,26 @@ func ConnectionStringFromEndpointAndAccountKey(ep, acctKey string) string {
 	return fmt.Sprintf("AccountEndpoint=%s;AccountKey=%s;", ep, acctKey)
 }
 
-var EntityAlreadyExists = errors.New("entity already exists")
-var EntityNotFound = errors.New("entity not found")
-var PreconditionFailed = errors.New("precondition failed")
-var InternalServerError = errors.New("internal server error")
+type CosError struct {
+	Code int
+	Text string
+}
+
+func (e *CosError) Error() string {
+	return fmt.Sprintf("%s (%d)", e.Text, e.Code)
+}
+
+var EntityAlreadyExists = &CosError{Code: http.StatusConflict, Text: "entity already exists"}
+var EntityNotFound = &CosError{Code: http.StatusNotFound, Text: "entity not found"}
+var PreconditionFailed = &CosError{Code: http.StatusPreconditionFailed, Text: "precondition failed"}
+
+// var InternalServerError = &CosError{Code: http.StatusInternalServerError, Text: "internal server error"}
 
 func GetErrorStatusAndMessage(err error) (int, string) {
 	if respErr, ok := err.(*azcore.ResponseError); ok {
 		return respErr.StatusCode, respErr.ErrorCode
 	}
-	return 500, "InternalServerError"
+	return 500, "internal server error"
 }
 
 func MapAzCoreError(err error) error {
@@ -42,7 +51,7 @@ func MapAzCoreError(err error) error {
 		zeroLogEvt = log.Warn()
 		err = PreconditionFailed
 	default:
-		err = InternalServerError
+		err = &CosError{Code: st, Text: msg}
 		zeroLogEvt = log.Error()
 		zeroLogEvt = zeroLogEvt.Err(err)
 	}
