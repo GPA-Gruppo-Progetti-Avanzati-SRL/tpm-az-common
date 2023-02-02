@@ -18,6 +18,9 @@ var EntityNotFound = errors.New("entity not found")
 var PreconditionFailed = errors.New("precondition failed")
 
 func GetErrorStatusAndMessage(err error) (int, string) {
+
+	const semLogContext = "az error: extracting status and error code"
+	log.Error().Err(err).Msg(semLogContext)
 	if respErr, ok := err.(*azcore.ResponseError); ok {
 		return respErr.StatusCode, respErr.ErrorCode
 	}
