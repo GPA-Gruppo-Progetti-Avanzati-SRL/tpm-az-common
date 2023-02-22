@@ -14,7 +14,7 @@ func Initialize(cfgs []Config) (LinkedServices, error) {
 
 	const semLogContext = "cos-registry::initialize"
 	if len(cfgs) == 0 {
-		log.Info().Msg(semLogContext + ": no config provided....skipping")
+		log.Info().Msg(semLogContext + " no config provided....skipping")
 		return nil, nil
 	}
 
