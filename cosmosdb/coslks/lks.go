@@ -6,10 +6,10 @@ import (
 )
 
 type LinkedService struct {
-	cfg *Config
+	cfg Config
 }
 
-func NewInstanceWithConfig(cfg *Config) (*LinkedService, error) {
+func NewInstanceWithConfig(cfg Config) (*LinkedService, error) {
 	lks := LinkedService{cfg: cfg}
 	return &lks, nil
 }

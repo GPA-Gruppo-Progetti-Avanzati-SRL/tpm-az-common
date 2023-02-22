@@ -12,10 +12,11 @@ type KeyNamePair struct {
 type CollectionsCfg []KeyNamePair
 
 type Config struct {
-	Endpoint    string         `mapstructure:"endpoint" yaml:"endpoint" json:"endpoint"`
-	AccountKey  string         `yaml:"account-key" mapstructure:"account-key" json:"account-key"`
-	DB          KeyNamePair    `yaml:"db" mapstructure:"db" json:"db"`
-	Collections CollectionsCfg `yaml:"collections" mapstructure:"collections" json:"collections"`
+	CosmosName  string         `mapstructure:"cos-name,omitempty" yaml:"cos-name,omitempty" json:"cos-name,omitempty"`
+	Endpoint    string         `mapstructure:"endpoint,omitempty" yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
+	AccountKey  string         `yaml:"account-key,omitempty" mapstructure:"account-key,omitempty" json:"account-key,omitempty"`
+	DB          KeyNamePair    `yaml:"db,omitempty" mapstructure:"db,omitempty" json:"db,omitempty"`
+	Collections CollectionsCfg `yaml:"collections,omitempty" mapstructure:"collections,omitempty" json:"collections,omitempty"`
 }
 
 func (c *Config) PostProcess() error {
