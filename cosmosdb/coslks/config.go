@@ -37,10 +37,11 @@ func (c *Config) GetCollectionName(aCollectionId string) string {
 
 func (c *Config) GetDbName(id string) string {
 
+	const semLogContext = "cos-lks::get-db-name-by-id"
 	if c.DB.Id == id {
 		return c.DB.Name
 	}
 
-	log.Error().Str("db-id", id).Msg("can't find db by id")
+	log.Error().Str("db-id", id).Msg(semLogContext + " can't find db by id")
 	return ""
 }
