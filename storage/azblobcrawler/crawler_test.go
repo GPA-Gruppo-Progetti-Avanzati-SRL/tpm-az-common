@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 	"os"
 	"regexp"
 	"sync"
@@ -63,6 +64,11 @@ func TestCrawler(t *testing.T) {
 
 	_, err := azbloblks.Initialize([]azstoragecfg.Config{stgConfig})
 	require.NoError(t, err)
+
+	b, err := yaml.Marshal(crawlerCfg)
+	require.NoError(t, err)
+
+	t.Log(string(b))
 
 	var wg sync.WaitGroup
 	crawler, err := azblobcrawler.NewInstance(&crawlerCfg, &wg, azblobcrawler.WithQuitChannel(make(chan error, 2)), azblobcrawler.WithListener(&testListener{}))

@@ -45,6 +45,10 @@ func WithConnectionString(cs string) Option {
 	}
 }
 
+func (c *Config) PostProcess() error {
+	return nil
+}
+
 /*
 func ReadConfig(fileName string) (StorageAccountKeys, error) {
 

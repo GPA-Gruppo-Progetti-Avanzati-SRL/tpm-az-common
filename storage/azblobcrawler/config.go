@@ -23,7 +23,7 @@ const (
 
 type Tag struct {
 	Name  string  `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
-	Value string  `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
+	Value string  `mapstructure:"value,omitempty" yaml:"value,omitempty" json:"value,omitempty"`
 	Type  TagType `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
 }
 
