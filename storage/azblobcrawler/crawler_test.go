@@ -36,6 +36,7 @@ var (
 		},
 		Paths: []azblobcrawler.Path{
 			{
+				Id:          "upload-pattern",
 				Container:   TargetContainer,
 				NamePattern: "test-blob-upload(-1)?\\.txt",
 				Regexp:      regexp.MustCompile("test-blob-upload(-1)?\\.txt"),
@@ -90,7 +91,7 @@ func (l *testListener) Accept(blob azbloblks.BlobInfo) bool {
 
 func (l *testListener) Process(blob azblobcrawler.CrawledBlob) error {
 	const semLogContext = "test-listener::process"
-	log.Info().Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
+	log.Info().Str("path-id", blob.PathId).Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
 	return nil
 }
 

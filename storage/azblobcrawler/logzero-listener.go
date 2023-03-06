@@ -16,7 +16,7 @@ func (l *logZeroListener) Accept(blob azbloblks.BlobInfo) bool {
 
 func (l *logZeroListener) Process(blob CrawledBlob) error {
 	const semLogContext = "log-zero-listener::process"
-	log.Info().Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
+	log.Info().Str("path-id", blob.PathId).Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
 	return nil
 }
 

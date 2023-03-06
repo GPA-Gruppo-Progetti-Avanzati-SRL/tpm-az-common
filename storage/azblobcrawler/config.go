@@ -30,7 +30,7 @@ type Tag struct {
 type Path struct {
 	Container   string         `mapstructure:"container,omitempty" yaml:"container,omitempty" json:"container,omitempty"`
 	NamePattern string         `mapstructure:"pattern,omitempty" yaml:"pattern,omitempty" json:"pattern,omitempty"`
-	Category    string         `mapstructure:"category,omitempty" yaml:"category,omitempty" json:"category,omitempty"`
+	Id          string         `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
 	Regexp      *regexp.Regexp `mapstructure:"-" yaml:"-" json:"-"`
 }
 
