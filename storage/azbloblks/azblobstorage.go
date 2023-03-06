@@ -44,6 +44,7 @@ type BlobInfo struct {
 	Size          int64     `mapstructure:"size,omitempty" yaml:"size,omitempty" json:"size,omitempty"`
 	ETag          string    `mapstructure:"etag,omitempty" yaml:"etag,omitempty" json:"etag,omitempty"`
 	LeaseState    string    `mapstructure:"lease-state,omitempty" yaml:"lease-state,omitempty" json:"lease-state,omitempty"`
+	Category      string    `mapstructure:"category,omitempty" yaml:"category,omitempty" json:"category,omitempty"`
 }
 
 func (az *LinkedService) NewContainer(cntName string, noErrorIfPresent bool) error {

@@ -27,6 +27,10 @@ type Event struct {
 	Status   int `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
 }
 
+/*
+ * Note. The TTL could be put On (no default)
+ */
+
 type File struct {
 	Id        string   `yaml:"id,omitempty" mapstructure:"id,omitempty" json:"id,omitempty"`
 	PKey      string   `yaml:"pkey,omitempty" mapstructure:"pkey,omitempty" json:"pkey,omitempty"`

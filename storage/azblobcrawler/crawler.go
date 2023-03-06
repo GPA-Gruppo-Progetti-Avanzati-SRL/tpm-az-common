@@ -211,6 +211,9 @@ func (c *Crawler) nextByTag() (azbloblks.BlobInfo, *azbloblks.LeaseHandler, bool
 				return azbloblks.BlobInfo{}, nil, false, err
 			}
 
+			// This is an application level value that is
+			b1.Category = p.Category
+
 			log.Info().Str("tag-name", tag.Name).Str("tag-value", tag.Value).Str("container", b1.ContainerName).Str("blob-name", b1.BlobName).Str("lease-state", b1.LeaseState).Msg(semLogContext + " blob found")
 			if b1.LeaseState != azbloblks.LeaseStateExpired && b1.LeaseState != azbloblks.LeaseStateAvailable {
 				log.Info().Str("container", b.ContainerName).Str("blob-name", b.BlobName).Str("lease-state", b1.LeaseState).Msg(semLogContext + " blob not available")
