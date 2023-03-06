@@ -26,7 +26,7 @@ type Crawler struct {
 }
 
 type Listener interface {
-	Accept(blob azbloblks.BlobInfo) bool
+	Accept(blob CrawledBlob) bool
 	Process(blob CrawledBlob) error
 	Start()
 	Close()
@@ -217,7 +217,9 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 				continue
 			}
 
-			if !c.listener.Accept(b1) {
+			crawledBlob := CrawledBlob{PathId: p.Id, BlobInfo: b1}
+
+			if !c.listener.Accept(crawledBlob) {
 				log.Info().Str("container", b.ContainerName).Str("blob-name", b.BlobName).Msg(semLogContext + " blob not accepted by listener")
 				continue
 			}
@@ -227,7 +229,8 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 				log.Info().Err(err).Str("container", b.ContainerName).Str("blob-name", b.BlobName).Str("lease-state", b1.LeaseState).Msg(semLogContext + " lease cannot be acquired")
 			}
 
-			return CrawledBlob{PathId: p.Id, BlobInfo: b1, LeaseHandler: leaseHandler}, true, nil
+			crawledBlob.LeaseHandler = leaseHandler
+			return crawledBlob, true, nil
 		}
 	}
 

@@ -83,9 +83,9 @@ func TestCrawler(t *testing.T) {
 type testListener struct {
 }
 
-func (l *testListener) Accept(blob azbloblks.BlobInfo) bool {
+func (l *testListener) Accept(blob azblobcrawler.CrawledBlob) bool {
 	const semLogContext = "test-listener::accept"
-	log.Info().Str("blob-name", blob.BlobName).Msg(semLogContext)
+	log.Info().Str("path-id", blob.PathId).Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
 	return true
 }
 
