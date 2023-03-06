@@ -20,6 +20,11 @@ func (l *logZeroListener) Process(blob CrawledBlob) error {
 	return nil
 }
 
+func (l *logZeroListener) Start() {
+	const semLogContext = "log-zero-listener::start"
+	log.Info().Msg(semLogContext)
+}
+
 func (l *logZeroListener) Close() {
 	const semLogContext = "log-zero-listener::close"
 	log.Info().Msg(semLogContext)

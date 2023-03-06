@@ -26,7 +26,8 @@ type Crawler struct {
 
 type Listener interface {
 	Accept(blob azbloblks.BlobInfo) bool
-	Process(CrawledBlob) error
+	Process(blob CrawledBlob) error
+	Start()
 	Close()
 }
 
@@ -87,26 +88,26 @@ func (c *Crawler) doWorkLoop() {
 	const semLogContext = "azb-crawler::work-loop"
 	log.Info().Float64("tickInterval-secs", c.cfg.TickInterval.Seconds()).Msg(semLogContext)
 
+	blobInfo, lh, ok, err := c.next()
+	if c.shouldExit(!ok, err != nil) {
+		log.Info().Msg(semLogContext + " crawler terminating...")
+		c.WorkerTerminated()
+		c.wg.Done()
+		return
+	}
+
+	c.listener.Start()
+
+	if ok {
+		_ = c.processBlob(blobInfo, lh)
+	}
+
 	ticker := time.NewTicker(c.cfg.TickInterval)
 	for {
 		select {
 		case <-ticker.C:
-			blobInfo, lh, ok, err := c.next()
-			doExit := false
-			if err != nil {
-				log.Error().Err(err).Msg(semLogContext)
-				if c.cfg.ExitOnErr {
-					doExit = true
-				}
-			}
-			if !ok {
-				log.Info().Msg(semLogContext + " crawler no blobs left to process...")
-				if c.cfg.ExitOnNop {
-					doExit = true
-				}
-			}
-
-			if doExit {
+			blobInfo, lh, ok, err = c.next()
+			if c.shouldExit(!ok, err != nil) {
 				log.Info().Msg(semLogContext + " crawler terminating...")
 				ticker.Stop()
 				c.listener.Close()
@@ -115,7 +116,9 @@ func (c *Crawler) doWorkLoop() {
 				return
 			}
 
-			_ = c.processBlob(blobInfo, lh)
+			if ok {
+				_ = c.processBlob(blobInfo, lh)
+			}
 
 		case <-c.quitc:
 			log.Info().Msg(semLogContext + " ending...")
@@ -158,6 +161,26 @@ func (c *Crawler) next() (azbloblks.BlobInfo, *azbloblks.LeaseHandler, bool, err
 	}
 
 	return azbloblks.BlobInfo{}, lh, ok, nil
+}
+
+func (c *Crawler) shouldExit(isNop bool, isError bool) bool {
+	const semLogContext = "azb-crawler::should-exit"
+
+	doExit := false
+	if isError {
+		if c.cfg.ExitOnErr {
+			doExit = true
+		}
+	}
+
+	if isNop {
+		log.Info().Msg(semLogContext + " crawler no blobs left to process...")
+		if c.cfg.ExitOnNop {
+			doExit = true
+		}
+	}
+
+	return doExit
 }
 
 func (c *Crawler) nextByTag() (azbloblks.BlobInfo, *azbloblks.LeaseHandler, bool, error) {
