@@ -98,3 +98,8 @@ func (l *testListener) Close() {
 	const semLogContext = "test-listener::close"
 	log.Info().Msg(semLogContext)
 }
+
+func (l *testListener) Start() {
+	const semLogContext = "test-listener::start"
+	log.Info().Msg(semLogContext)
+}
