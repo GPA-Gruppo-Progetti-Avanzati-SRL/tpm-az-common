@@ -23,7 +23,7 @@ const (
 func TestListBlobs(t *testing.T) {
 	ctx := context.Background()
 
-	stgConfig := azstoragecfg.StorageAccount{
+	stgConfig := azstoragecfg.Config{
 		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
 		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
 	}
@@ -31,7 +31,7 @@ func TestListBlobs(t *testing.T) {
 	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
 	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
 
-	azb, err := azbloblks.NewAzBlobServiceInstance(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
 	require.NoError(t, err)
 
 	err = azb.NewContainer(TargetContainer, true)
@@ -63,7 +63,7 @@ func TestListBlobs(t *testing.T) {
 func TestUploadBlob(t *testing.T) {
 	ctx := context.Background()
 
-	stgConfig := azstoragecfg.StorageAccount{
+	stgConfig := azstoragecfg.Config{
 		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
 		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
 	}
@@ -71,7 +71,7 @@ func TestUploadBlob(t *testing.T) {
 	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
 	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
 
-	azb, err := azbloblks.NewAzBlobServiceInstance(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
 	require.NoError(t, err)
 
 	defer func() {
@@ -88,7 +88,7 @@ func TestUploadBlob(t *testing.T) {
 }
 
 func TestDownloadBlob(t *testing.T) {
-	stgConfig := azstoragecfg.StorageAccount{
+	stgConfig := azstoragecfg.Config{
 		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
 		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
 	}
@@ -96,7 +96,7 @@ func TestDownloadBlob(t *testing.T) {
 	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
 	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
 
-	azb, err := azbloblks.NewAzBlobServiceInstance(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
 	require.NoError(t, err)
 
 	_, err = azb.DownloadToBuffer(TargetContainer, "cortina-2021")
@@ -108,7 +108,7 @@ func TestDownloadBlob(t *testing.T) {
 }
 
 func TestAcquireBlob(t *testing.T) {
-	stgConfig := azstoragecfg.StorageAccount{
+	stgConfig := azstoragecfg.Config{
 		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
 		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
 	}
@@ -116,7 +116,7 @@ func TestAcquireBlob(t *testing.T) {
 	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
 	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
 
-	azb, err := azbloblks.NewAzBlobServiceInstance(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
 	require.NoError(t, err)
 
 	blobName := "cortina-2021"
@@ -124,8 +124,10 @@ func TestAcquireBlob(t *testing.T) {
 	require.NoError(t, err)
 	t.Log(blobInfo)
 
-	leaseId, err := azb.AcquireLease(TargetContainer, blobName, 30)
+	leaseHandler, err := azb.AcquireLease(TargetContainer, blobName, 60, true)
 	require.NoError(t, err)
+
+	defer leaseHandler.Close()
 
 	for i := 0; i <= 20; i++ {
 		blobInfo, err = azb.GetBlobInfo(TargetContainer, blobName)
@@ -135,14 +137,11 @@ func TestAcquireBlob(t *testing.T) {
 		time.Sleep(20 * time.Second)
 
 		bi := azbloblks.BlobInfo{ContainerName: TargetContainer, BlobName: blobName, Tags: []azbloblks.BlobTag{{Key: "TAGleased", Value: fmt.Sprintf("tag-val-%d", i)}}}
-		err = azb.SetBlobTags(bi, leaseId)
-		require.NoError(t, err)
-
-		_, err = azb.RenewLease(TargetContainer, blobName, leaseId)
+		err = azb.SetBlobTags(bi, leaseHandler.LeaseId)
 		require.NoError(t, err)
 
 		if i == 6 {
-			_, err := azb.AcquireLease(TargetContainer, blobName, 30)
+			_, err := azb.AcquireLease(TargetContainer, blobName, 30, false)
 			if err != nil {
 				t.Log(err.Error())
 			}
@@ -189,12 +188,12 @@ func TestDownloadPreSigned(t *testing.T) {
 func TestBlobListBlobsWithSAS(t *testing.T) {
 	ctx := context.Background()
 
-	stgConfig := azstoragecfg.StorageAccount{
+	stgConfig := azstoragecfg.Config{
 		Name:       "",
 		AccountKey: "",
 	}
 
-	azb, err := azbloblks.NewAzBlobServiceInstance(stgConfig.Name, azstoragecfg.WithSasToken("sv=2020-08-04&ss=bfqt&srt=co&sp=rwdlacupitfx&se=2021-12-31T21:26:45Z&st=2021-12-10T13:26:45Z&spr=https&sig=EG%2BJ5X4e0pzO5PUyQZsxzah8m1W6tX24hdxlr1KQj6M%3D"))
+	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithSasToken("sv=2020-08-04&ss=bfqt&srt=co&sp=rwdlacupitfx&se=2021-12-31T21:26:45Z&st=2021-12-10T13:26:45Z&spr=https&sig=EG%2BJ5X4e0pzO5PUyQZsxzah8m1W6tX24hdxlr1KQj6M%3D"))
 	require.NoError(t, err)
 
 	err = azb.NewContainer(TargetContainer, true)

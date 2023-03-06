@@ -5,16 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/lease"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/storage/azblobutil"
-	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/storage/azstoragecfg"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common/util"
-	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -24,15 +20,18 @@ import (
 	"strings"
 )
 
-type AzBlobLinkedService struct {
-	Name   string
-	Client *azblob.Client
-}
-
 type BlobTag struct {
 	Key   string `mapstructure:"key,omitempty" yaml:"key,omitempty" json:"key,omitempty"`
 	Value string `mapstructure:"value,omitempty" yaml:"value,omitempty" json:"value,omitempty"`
 }
+
+const (
+	LeaseStateAvailable = "available" // The lease is unlocked and can be acquired. Allowed action: acquire.
+	LeaseStateLeased    = "leased"    //  The lease is locked. Allowed actions: acquire (same lease ID only), renew, change, release, and break.
+	LeaseStateExpired   = "expired"   //  The lease duration has expired. Allowed actions: acquire, renew, release, and break.
+	LeaseStateBreaking  = "breaking"  //  The lease has been broken, but the lease will continue to be locked until the break period has expired. Allowed actions: release and break.
+	LeaseStateBroken    = "broken"    // : The lease has been broken, and the break period has expired. Allowed actions: acquire, release, and break.
+)
 
 type BlobInfo struct {
 	Exists        bool      `mapstructure:"exists,omitempty" yaml:"exists,omitempty" json:"exists,omitempty"`
@@ -47,58 +46,9 @@ type BlobInfo struct {
 	LeaseState    string    `mapstructure:"lease-state,omitempty" yaml:"lease-state,omitempty" json:"lease-state,omitempty"`
 }
 
-const (
-	StorageAccountBlobBaseUrl = "https://%s.blob.core.windows.net/"
-	StorageAccountBlobSasUrl  = "https://%s.blob.core.windows.net/?%s"
-)
+func (az *LinkedService) NewContainer(cntName string, noErrorIfPresent bool) error {
 
-func NewAzBlobServiceInstanceWithConfig(cfg azstoragecfg.StorageAccount) (*AzBlobLinkedService, error) {
-
-	var serviceClient *azblob.Client
-	var err error
-
-	switch cfg.AuthMode {
-	case azstoragecfg.AuthModeAccountKey:
-		cred, err := azblob.NewSharedKeyCredential(cfg.Account, cfg.AccountKey)
-		if err != nil {
-			return nil, err
-		}
-
-		serviceClient, err = azblob.NewClientWithSharedKeyCredential(fmt.Sprintf(StorageAccountBlobBaseUrl, cfg.Account), cred, nil)
-		if err != nil {
-			return nil, err
-		}
-
-	case azstoragecfg.AuthModeSasToken:
-		serviceClient, err = azblob.NewClientWithNoCredential(fmt.Sprintf(StorageAccountBlobSasUrl, cfg.Account, cfg.SasToken), nil)
-		if err != nil {
-			return nil, err
-		}
-
-	case azstoragecfg.AuthModeConnectionString:
-		return nil, errors.New("connection string not yet supported")
-
-	default:
-		return nil, errors.New("please specify a suitable authentication mode")
-	}
-
-	lks := &AzBlobLinkedService{Name: cfg.Name, Client: serviceClient}
-	return lks, nil
-}
-
-func NewAzBlobServiceInstance(account string, opts ...azstoragecfg.Option) (*AzBlobLinkedService, error) {
-	cfg := azstoragecfg.StorageAccount{Account: account}
-
-	for _, o := range opts {
-		o(&cfg)
-	}
-
-	return NewAzBlobServiceInstanceWithConfig(cfg)
-}
-
-func (az *AzBlobLinkedService) NewContainer(cntName string, noErrorIfPresent bool) error {
-
-	const semLogContext = "new-container"
+	const semLogContext = "azb-lks::new-container"
 	var err error
 
 	createOpts := &azblob.CreateContainerOptions{}
@@ -120,8 +70,8 @@ func (az *AzBlobLinkedService) NewContainer(cntName string, noErrorIfPresent boo
 	return err
 }
 
-func (az *AzBlobLinkedService) DeleteContainer(cntName string, noErrorIfMissing bool) error {
-	const semLogContext = "delete-container"
+func (az *LinkedService) DeleteContainer(cntName string, noErrorIfMissing bool) error {
+	const semLogContext = "azb-lks::delete-container"
 
 	var err error
 	deleteOpts := &azblob.DeleteContainerOptions{}
@@ -142,13 +92,13 @@ func (az *AzBlobLinkedService) DeleteContainer(cntName string, noErrorIfMissing 
 	return err
 }
 
-func (az *AzBlobLinkedService) BlobExists(cntName string, fn string) (bool, error) {
+func (az *LinkedService) BlobExists(cntName string, fn string) (bool, error) {
 
 	_, ok, err := az.GetBlobProperties(cntName, fn)
 	return ok, err
 }
 
-func (az *AzBlobLinkedService) GetBlobProperties(cntName string, fn string) (blob.GetPropertiesResponse, bool, error) {
+func (az *LinkedService) GetBlobProperties(cntName string, fn string) (blob.GetPropertiesResponse, bool, error) {
 	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(fn)
 
 	opts := &blob.GetPropertiesOptions{}
@@ -165,7 +115,7 @@ func (az *AzBlobLinkedService) GetBlobProperties(cntName string, fn string) (blo
 	return resp, true, nil
 }
 
-func (az *AzBlobLinkedService) GetBlobInfo(cntName string, fn string) (BlobInfo, error) {
+func (az *LinkedService) GetBlobInfo(cntName string, fn string) (BlobInfo, error) {
 	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(fn)
 
 	opts := &blob.GetPropertiesOptions{}
@@ -193,60 +143,7 @@ func (az *AzBlobLinkedService) GetBlobInfo(cntName string, fn string) (BlobInfo,
 	return bi, nil
 }
 
-func (az *AzBlobLinkedService) AcquireLease(cntName string, fn string, duration int) (string, error) {
-
-	const semLogContext = "acquire-lease"
-	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(fn)
-	leaseID := uuid.New().String()
-	leaseClient, err := lease.NewBlobClient(blobClient, &lease.BlobClientOptions{LeaseID: to.Ptr(leaseID)})
-	if err != nil {
-		return leaseID, azblobutil.MapError2AzBlobError(err)
-	}
-
-	if duration > 0 {
-		if duration < 15 {
-			duration = 15
-		}
-		if duration > 60 {
-			duration = 60
-		}
-	} else {
-		duration = -1
-	}
-	log.Info().Str("lease-id", leaseID).Int("duration", duration).Msg(semLogContext)
-
-	durationOption := int32(duration)
-	resp, err := leaseClient.AcquireLease(context.Background(), &lease.BlobAcquireOptions{Duration: &durationOption})
-	if err != nil {
-		return leaseID, azblobutil.MapError2AzBlobError(err)
-	}
-
-	log.Trace().Interface("lease-resp", resp).Send()
-	return leaseID, nil
-}
-
-func (az *AzBlobLinkedService) RenewLease(cntName string, fn string, leaseID string) (string, error) {
-
-	const semLogContext = "renew-lease"
-	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(fn)
-
-	leaseClient, err := lease.NewBlobClient(blobClient, &lease.BlobClientOptions{LeaseID: to.Ptr(leaseID)})
-	if err != nil {
-		return leaseID, azblobutil.MapError2AzBlobError(err)
-	}
-
-	log.Info().Str("lease-id", leaseID).Msg(semLogContext)
-
-	resp, err := leaseClient.RenewLease(context.Background(), &lease.BlobRenewOptions{})
-	if err != nil {
-		return leaseID, azblobutil.MapError2AzBlobError(err)
-	}
-
-	log.Trace().Interface("lease-resp", resp).Send()
-	return leaseID, nil
-}
-
-func (az *AzBlobLinkedService) DownloadToBuffer(cntName string, blobName string) (BlobInfo, error) {
+func (az *LinkedService) DownloadToBuffer(cntName string, blobName string) (BlobInfo, error) {
 	ctx := context.Background()
 
 	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(blobName)
@@ -277,9 +174,11 @@ func (az *AzBlobLinkedService) DownloadToBuffer(cntName string, blobName string)
 	return fi, nil
 }
 
-func (az *AzBlobLinkedService) DownloadToFile(cntName string, blobName string, destFilename string) (BlobInfo, error) {
+func (az *LinkedService) DownloadToFile(cntName string, blobName string, destFilename string) (BlobInfo, error) {
 
-	const semLogContext = "download-file"
+	const semLogContext = "azb-lks::download-file"
+	log.Trace().Str("container-name", cntName).Str("blob-name", blobName).Str("dest-file", destFilename).Msg(semLogContext)
+
 	ctx := context.Background()
 
 	destFile, err := os.Create(destFilename)
@@ -311,7 +210,7 @@ func (az *AzBlobLinkedService) DownloadToFile(cntName string, blobName string, d
  *
  */
 
-func (az *AzBlobLinkedService) UploadFromBuffer(ctx context.Context, container, fn string, body []byte) (string, error) {
+func (az *LinkedService) UploadFromBuffer(ctx context.Context, container, fn string, body []byte) (string, error) {
 
 	var err error
 
@@ -326,9 +225,9 @@ func (az *AzBlobLinkedService) UploadFromBuffer(ctx context.Context, container, 
 	return "", nil
 }
 
-func (az *AzBlobLinkedService) UploadFromFile(ctx context.Context, cntName, blobName string, sourceFileName string) (string, error) {
+func (az *LinkedService) UploadFromFile(ctx context.Context, cntName, blobName string, sourceFileName string) (string, error) {
 
-	const semLogContext = "download-file"
+	const semLogContext = "azb-lks::upload-file"
 
 	destFile, err := os.Open(sourceFileName)
 	if err != nil {
@@ -367,7 +266,7 @@ func (az *AzBlobLinkedService) UploadFromFile(ctx context.Context, cntName, blob
 	return "", nil
 }
 
-func (az *AzBlobLinkedService) ListBlobByTag(cntName string, tagName, tagValue string, maxResults int) ([]BlobInfo, error) {
+func (az *LinkedService) ListBlobByTag(cntName string, tagName, tagValue string, maxResults int) ([]BlobInfo, error) {
 
 	svcClient := az.Client.ServiceClient()
 
@@ -402,7 +301,7 @@ func (az *AzBlobLinkedService) ListBlobByTag(cntName string, tagName, tagValue s
 	return rl, nil
 }
 
-func (az *AzBlobLinkedService) SetBlobTags(blobInfo BlobInfo, leaseId string) error {
+func (az *LinkedService) SetBlobTags(blobInfo BlobInfo, leaseId string) error {
 	blobClient := az.Client.ServiceClient().NewContainerClient(blobInfo.ContainerName).NewBlobClient(blobInfo.BlobName)
 
 	var newTags map[string]string

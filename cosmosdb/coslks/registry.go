@@ -26,7 +26,7 @@ func Initialize(cfgs []Config) (LinkedServices, error) {
 
 	var r LinkedServices
 	for _, kcfg := range cfgs {
-		lks, err := NewInstanceWithConfig(kcfg)
+		lks, err := NewLinkedServiceWithConfig(kcfg)
 		if err != nil {
 			return nil, err
 		}

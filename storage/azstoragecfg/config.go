@@ -6,7 +6,7 @@ const (
 	AuthModeConnectionString = "connection-string"
 )
 
-type StorageAccount struct {
+type Config struct {
 	Name     string `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
 	Account  string `mapstructure:"account,omitempty" yaml:"account,omitempty" json:"account,omitempty"`
 	AuthMode string `mapstructure:"auth-mode,omitempty"  yaml:"auth-mode,omitempty" json:"auth-mode,omitempty"`
@@ -16,30 +16,30 @@ type StorageAccount struct {
 	ConnectionString string `mapstructure:"conn-string,omitempty" yaml:"conn-string,omitempty" json:"conn-string,omitempty"`
 }
 
-type Option func(cfg *StorageAccount)
+type Option func(cfg *Config)
 
 func WithName(k string) Option {
-	return func(cfg *StorageAccount) {
+	return func(cfg *Config) {
 		cfg.Name = k
 	}
 }
 
 func WithAccountKey(k string) Option {
-	return func(cfg *StorageAccount) {
+	return func(cfg *Config) {
 		cfg.AccountKey = k
 		cfg.AuthMode = AuthModeAccountKey
 	}
 }
 
 func WithSasToken(t string) Option {
-	return func(cfg *StorageAccount) {
+	return func(cfg *Config) {
 		cfg.SasToken = t
 		cfg.AuthMode = AuthModeSasToken
 	}
 }
 
 func WithConnectionString(cs string) Option {
-	return func(cfg *StorageAccount) {
+	return func(cfg *Config) {
 		cfg.ConnectionString = cs
 		cfg.AuthMode = AuthModeConnectionString
 	}
