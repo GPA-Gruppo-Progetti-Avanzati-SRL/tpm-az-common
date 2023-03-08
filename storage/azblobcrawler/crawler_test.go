@@ -39,7 +39,7 @@ var (
 				Id:          "upload-pattern",
 				Container:   TargetContainer,
 				NamePattern: "test-blob-upload(-1)?\\.txt",
-				Regexp:      regexp.MustCompile("test-blob-upload(-1)?\\.txt"),
+				Regexp:      regexp.MustCompile("(test-blob)-upload(-1)?\\.txt"),
 			},
 		},
 		TickInterval: time.Second * 5,

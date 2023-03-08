@@ -11,6 +11,7 @@ import (
 
 type CrawledBlob struct {
 	BlobId       string                  `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
+	NameGroups   []string                `mapstructure:"name-groups,omitempty" yaml:"name-groups,omitempty" json:"name-groups,omitempty"`
 	PathId       string                  `mapstructure:"path-id,omitempty" yaml:"path-id,omitempty" json:"path-id,omitempty"`
 	BlobInfo     azbloblks.BlobInfo      `mapstructure:"info,omitempty" yaml:"info,omitempty" json:"info,omitempty"`
 	ThinkTime    time.Duration           `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
@@ -207,6 +208,14 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 				continue
 			}
 
+			matches := p.Regexp.FindAllStringSubmatch(b.BlobName, -1)
+			var blobNameParts []string
+			if len(matches[0]) > 0 {
+				for i := 1; i < len(matches[0]); i++ {
+					blobNameParts = append(blobNameParts, matches[0][i])
+				}
+			}
+
 			b1, err := lks.GetBlobInfo(b.ContainerName, b.BlobName)
 			if err != nil {
 				log.Error().Err(err).Str("blob-name", b.BlobName).Str("container", b.ContainerName).Msg(semLogContext + " impossible to get ")
@@ -219,7 +228,7 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 				continue
 			}
 
-			crawledBlob := CrawledBlob{BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1}
+			crawledBlob := CrawledBlob{BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1, NameGroups: blobNameParts}
 
 			crawledBlob.ThinkTime, ok = c.listener.Accept(crawledBlob)
 			if !ok {
