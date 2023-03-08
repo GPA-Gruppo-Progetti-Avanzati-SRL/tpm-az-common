@@ -18,14 +18,14 @@ type RowStatus struct {
 }
 
 type Row struct {
-	Id        string            `yaml:"id,omitempty" mapstructure:"id,omitempty" json:"id,omitempty"`
-	PKey      string            `yaml:"pkey,omitempty" mapstructure:"pkey,omitempty" json:"pkey,omitempty"`
-	FileId    string            `yaml:"file-id,omitempty" mapstructure:"file-id,omitempty" json:"file-id,omitempty"`
-	Raw       string            `yaml:"raw,omitempty" mapstructure:"raw,omitempty" json:"raw,omitempty"`
-	Status    RowStatus         `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
-	RowNumber int               `yaml:"row-num,omitempty" mapstructure:"row-num,omitempty" json:"row-num,omitempty"`
-	Data      map[string]string `yaml:"data,omitempty" mapstructure:"data,omitempty" json:"data,omitempty"`
-	TTL       int               `yaml:"ttl,omitempty" mapstructure:"ttl,omitempty" json:"ttl,omitempty"`
+	Id        string                 `yaml:"id,omitempty" mapstructure:"id,omitempty" json:"id,omitempty"`
+	PKey      string                 `yaml:"pkey,omitempty" mapstructure:"pkey,omitempty" json:"pkey,omitempty"`
+	FileId    string                 `yaml:"file-id,omitempty" mapstructure:"file-id,omitempty" json:"file-id,omitempty"`
+	Raw       string                 `yaml:"raw,omitempty" mapstructure:"raw,omitempty" json:"raw,omitempty"`
+	Status    RowStatus              `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
+	RowNumber int                    `yaml:"row-num,omitempty" mapstructure:"row-num,omitempty" json:"row-num,omitempty"`
+	Data      map[string]interface{} `yaml:"data,omitempty" mapstructure:"data,omitempty" json:"data,omitempty"`
+	TTL       int                    `yaml:"ttl,omitempty" mapstructure:"ttl,omitempty" json:"ttl,omitempty"`
 }
 
 func (r *Row) enforceDefaultValues() {

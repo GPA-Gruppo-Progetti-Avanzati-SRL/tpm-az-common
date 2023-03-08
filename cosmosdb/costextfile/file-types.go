@@ -13,11 +13,13 @@ const (
 	FileDefaultExpireTTL = 3600 * 24 * 30 // Default value is set to 30 days. It will enforced if the ttl value provided has not been set... 0
 )
 
+// Note: omitempty removed because they are counters and the 0 value is a meaningful value.
+
 type RowsStat struct {
-	Total     int `yaml:"total,omitempty" mapstructure:"total,omitempty" json:"total,omitempty"`
-	Processed int `yaml:"processed,omitempty" mapstructure:"processed,omitempty" json:"processed,omitempty"`
-	Valid     int `yaml:"valid,omitempty" mapstructure:"valid,omitempty" json:"valid,omitempty"`
-	Failed    int `yaml:"failed,omitempty" mapstructure:"failed,omitempty" json:"failed,omitempty"`
+	Total     int `yaml:"total" mapstructure:"total" json:"total"`
+	Processed int `yaml:"processed" mapstructure:"processed" json:"processed"`
+	Valid     int `yaml:"valid" mapstructure:"valid" json:"valid"`
+	Failed    int `yaml:"failed" mapstructure:"failed" json:"failed"`
 }
 
 type Event struct {
@@ -39,7 +41,7 @@ type File struct {
 	Prty      string   `yaml:"prty,omitempty" mapstructure:"prty,omitempty" json:"prty,omitempty"`
 	Status    string   `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
 	NumDups   int      `yaml:"num-dups,omitempty" mapstructure:"num-dups,omitempty" json:"num-dups,omitempty"`
-	RowsStats RowsStat `yaml:"rows-stats,omitempty" mapstructure:"rows-stats,omitempty" json:"rows-stats,omitempty"`
+	RowsStats RowsStat `yaml:"rows-stats" mapstructure:"rows-stats" json:"rows-stats"`
 	TTL       int      `yaml:"ttl,omitempty" mapstructure:"ttl,omitempty" json:"ttl,omitempty"`
 }
 
