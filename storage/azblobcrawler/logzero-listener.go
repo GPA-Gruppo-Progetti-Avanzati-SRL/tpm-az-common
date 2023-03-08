@@ -2,15 +2,16 @@ package azblobcrawler
 
 import (
 	"github.com/rs/zerolog/log"
+	"time"
 )
 
 type logZeroListener struct {
 }
 
-func (l *logZeroListener) Accept(blob CrawledBlob) bool {
+func (l *logZeroListener) Accept(blob CrawledBlob) (time.Duration, bool) {
 	const semLogContext = "log-zero-listener::accept"
 	log.Info().Str("path-id", blob.PathId).Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
-	return true
+	return 0, true
 }
 
 func (l *logZeroListener) Process(blob CrawledBlob) error {

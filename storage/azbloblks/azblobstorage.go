@@ -312,6 +312,32 @@ func (az *LinkedService) ListBlobByTag(cntName string, tagName, tagValue string,
 	return rl, nil
 }
 
+func (az *LinkedService) SetTags(container, blobNae string, tags []BlobTag, leaseId string) error {
+	blobClient := az.Client.ServiceClient().NewContainerClient(container).NewBlobClient(blobNae)
+
+	var newTags map[string]string
+	for _, bi := range tags {
+		if newTags == nil {
+			newTags = make(map[string]string)
+		}
+		newTags[bi.Key] = bi.Value
+	}
+
+	opts := blob.SetTagsOptions{}
+	if leaseId != "" {
+		opts.AccessConditions = &blob.AccessConditions{LeaseAccessConditions: &blob.LeaseAccessConditions{
+			LeaseID: &leaseId,
+		}}
+	}
+
+	_, err := blobClient.SetTags(context.Background(), newTags, &opts)
+	if err != nil {
+		return azblobutil.MapError2AzBlobError(err)
+	}
+
+	return nil
+}
+
 func (az *LinkedService) SetBlobTags(blobInfo BlobInfo, leaseId string) error {
 	blobClient := az.Client.ServiceClient().NewContainerClient(blobInfo.ContainerName).NewBlobClient(blobInfo.BlobName)
 

@@ -127,7 +127,7 @@ func TestAcquireBlob(t *testing.T) {
 	leaseHandler, err := azb.AcquireLease(TargetContainer, blobName, 60, true)
 	require.NoError(t, err)
 
-	defer leaseHandler.Close()
+	defer leaseHandler.Release()
 
 	for i := 0; i <= 20; i++ {
 		blobInfo, err = azb.GetBlobInfo(TargetContainer, blobName)

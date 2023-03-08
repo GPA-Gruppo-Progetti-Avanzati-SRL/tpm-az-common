@@ -13,18 +13,17 @@ const (
 	ModeTag Mode = "tag"
 )
 
-type TagType string
+type TagValueId string
 
 const (
-	QueryTag   TagType = "ready"
-	WorkingTag TagType = "working"
-	DoneTag    TagType = "done"
+	TagValueReady   TagValueId = "ready"
+	TagValueWorking TagValueId = "working"
+	TagValueDone    TagValueId = "done"
 )
 
-type Tag struct {
-	Name  string  `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
-	Value string  `mapstructure:"value,omitempty" yaml:"value,omitempty" json:"value,omitempty"`
-	Type  TagType `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+type TagValue struct {
+	Id    TagValueId `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
+	Value string     `mapstructure:"value,omitempty" yaml:"value,omitempty" json:"value,omitempty"`
 }
 
 type Path struct {
@@ -37,7 +36,8 @@ type Path struct {
 type Config struct {
 	StorageName  string        `mapstructure:"storage-name,omitempty" yaml:"storage-name,omitempty" json:"storage-name,omitempty"`
 	Mode         Mode          `mapstructure:"mode,omitempty" yaml:"mode,omitempty" json:"mode,omitempty"`
-	Tags         []Tag         `mapstructure:"tags,omitempty" yaml:"tags,omitempty" json:"tags,omitempty"`
+	TagName      string        `mapstructure:"tag-name,omitempty" yaml:"tag-name,omitempty" json:"tag-name,omitempty"`
+	Tags         []TagValue    `mapstructure:"tag-values,omitempty" yaml:"tag-values,omitempty" json:"tag-values,omitempty"`
 	Paths        []Path        `mapstructure:"paths,omitempty" yaml:"paths,omitempty" json:"paths,omitempty"`
 	TickInterval time.Duration `mapstructure:"tick-interval" yaml:"tick-interval" json:"tick-interval"`
 	DownloadPath string        `mapstructure:"download-path" yaml:"download-path" json:"download-path"`
@@ -45,14 +45,14 @@ type Config struct {
 	ExitOnErr    bool          `mapstructure:"exit-on-err" yaml:"exit-on-err" json:"exit-on-err"`
 }
 
-func (c *Config) GetTagByType(tt TagType) (Tag, bool) {
+func (c *Config) GetTagByType(tt TagValueId) (TagValue, bool) {
 	for _, t := range c.Tags {
-		if t.Type == tt {
+		if t.Id == tt {
 			return t, true
 		}
 	}
 
-	return Tag{}, false
+	return TagValue{}, false
 }
 
 func (c *Config) PostProcess() error {

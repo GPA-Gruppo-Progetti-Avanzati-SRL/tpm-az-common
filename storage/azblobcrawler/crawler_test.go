@@ -27,11 +27,11 @@ var (
 	crawlerCfg = azblobcrawler.Config{
 		StorageName: "test",
 		Mode:        azblobcrawler.ModeTag,
-		Tags: []azblobcrawler.Tag{
+		TagName:     "status",
+		Tags: []azblobcrawler.TagValue{
 			{
-				Name:  "status",
 				Value: "ready",
-				Type:  azblobcrawler.QueryTag,
+				Id:    azblobcrawler.TagValueReady,
 			},
 		},
 		Paths: []azblobcrawler.Path{
@@ -83,15 +83,22 @@ func TestCrawler(t *testing.T) {
 type testListener struct {
 }
 
-func (l *testListener) Accept(blob azblobcrawler.CrawledBlob) bool {
+func (l *testListener) Accept(blob azblobcrawler.CrawledBlob) (time.Duration, bool) {
 	const semLogContext = "test-listener::accept"
 	log.Info().Str("path-id", blob.PathId).Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
-	return true
+	return 0, true
 }
 
 func (l *testListener) Process(blob azblobcrawler.CrawledBlob) error {
 	const semLogContext = "test-listener::process"
 	log.Info().Str("path-id", blob.PathId).Str("blob-name", blob.BlobInfo.BlobName).Msg(semLogContext)
+
+	if blob.LeaseHandler != nil {
+		blob.LeaseHandler.Release(azbloblks.WithTag(azbloblks.BlobTag{
+			Key:   "status",
+			Value: "done",
+		}))
+	}
 	return nil
 }
 
