@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -44,6 +45,16 @@ type BlobInfo struct {
 	Size          int64     `mapstructure:"size,omitempty" yaml:"size,omitempty" json:"size,omitempty"`
 	ETag          string    `mapstructure:"etag,omitempty" yaml:"etag,omitempty" json:"etag,omitempty"`
 	LeaseState    string    `mapstructure:"lease-state,omitempty" yaml:"lease-state,omitempty" json:"lease-state,omitempty"`
+}
+
+func (bi *BlobInfo) Id() string {
+	id := filepath.Base(bi.BlobName)
+	ext := filepath.Ext(bi.BlobName)
+	if ext != "" {
+		id = strings.TrimSuffix(id, ext)
+	}
+
+	return id
 }
 
 func (az *LinkedService) NewContainer(cntName string, noErrorIfPresent bool) error {

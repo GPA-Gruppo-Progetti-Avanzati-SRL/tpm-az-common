@@ -10,9 +10,10 @@ import (
 )
 
 type CrawledBlob struct {
-	PathId       string
-	BlobInfo     azbloblks.BlobInfo
-	LeaseHandler *azbloblks.LeaseHandler
+	BlobId       string                  `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
+	PathId       string                  `mapstructure:"path-id,omitempty" yaml:"path-id,omitempty" json:"path-id,omitempty"`
+	BlobInfo     azbloblks.BlobInfo      `mapstructure:"info,omitempty" yaml:"info,omitempty" json:"info,omitempty"`
+	LeaseHandler *azbloblks.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
 }
 
 type Crawler struct {
@@ -217,7 +218,7 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 				continue
 			}
 
-			crawledBlob := CrawledBlob{PathId: p.Id, BlobInfo: b1}
+			crawledBlob := CrawledBlob{BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1}
 
 			if !c.listener.Accept(crawledBlob) {
 				log.Info().Str("container", b.ContainerName).Str("blob-name", b.BlobName).Msg(semLogContext + " blob not accepted by listener")
