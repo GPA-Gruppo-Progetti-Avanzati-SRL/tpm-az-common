@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v0.3.3
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.6.1
 	github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common v0.0.63
-	github.com/btnguyen2k/gocosmos v0.1.8
+	github.com/btnguyen2k/gocosmos v0.2.0
 	github.com/google/uuid v1.3.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/rs/zerolog v1.28.0
@@ -20,6 +20,7 @@ require (
 require (
 	github.com/Azure/azure-sdk-for-go v63.2.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
+	github.com/btnguyen2k/consu/checksum v0.1.2 // indirect
 	github.com/btnguyen2k/consu/gjrc v0.1.1 // indirect
 	github.com/btnguyen2k/consu/olaf v0.1.3 // indirect
 	github.com/btnguyen2k/consu/reddo v0.1.4 // indirect

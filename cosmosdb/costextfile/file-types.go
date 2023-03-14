@@ -23,10 +23,16 @@ type RowsStat struct {
 }
 
 type Event struct {
-	Duration int `yaml:"duration,omitempty" mapstructure:"duration,omitempty" json:"duration,omitempty"`
-	Path     int `yaml:"path,omitempty" mapstructure:"path,omitempty" json:"path,omitempty"`
-	Ts       int `yaml:"ts,omitempty" mapstructure:"ts,omitempty" json:"ts,omitempty"`
-	Status   int `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
+	Duration    int    `yaml:"duration,omitempty" mapstructure:"duration,omitempty" json:"duration,omitempty"`
+	Path        int    `yaml:"path,omitempty" mapstructure:"path,omitempty" json:"path,omitempty"`
+	Ts          int    `yaml:"ts,omitempty" mapstructure:"ts,omitempty" json:"ts,omitempty"`
+	Type        string `yaml:"type,omitempty" mapstructure:"type,omitempty" json:"type,omitempty"`
+	Description string `yaml:"description,omitempty" mapstructure:"description,omitempty" json:"description,omitempty"`
+}
+
+type FileStatus struct {
+	Code string `yaml:"cd,omitempty" mapstructure:"cd,omitempty" json:"cd,omitempty"`
+	Text string `yaml:"text,omitempty" mapstructure:"text,omitempty" json:"text,omitempty"`
 }
 
 /*
@@ -34,15 +40,16 @@ type Event struct {
  */
 
 type File struct {
-	Id        string   `yaml:"id,omitempty" mapstructure:"id,omitempty" json:"id,omitempty"`
-	PKey      string   `yaml:"pkey,omitempty" mapstructure:"pkey,omitempty" json:"pkey,omitempty"`
-	Path      string   `yaml:"path,omitempty" mapstructure:"path,omitempty" json:"path,omitempty"`
-	Filename  string   `yaml:"filename,omitempty" mapstructure:"filename,omitempty" json:"filename,omitempty"`
-	Prty      string   `yaml:"prty,omitempty" mapstructure:"prty,omitempty" json:"prty,omitempty"`
-	Status    string   `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
-	NumDups   int      `yaml:"num-dups,omitempty" mapstructure:"num-dups,omitempty" json:"num-dups,omitempty"`
-	RowsStats RowsStat `yaml:"rows-stats" mapstructure:"rows-stats" json:"rows-stats"`
-	TTL       int      `yaml:"ttl,omitempty" mapstructure:"ttl,omitempty" json:"ttl,omitempty"`
+	Id        string     `yaml:"id,omitempty" mapstructure:"id,omitempty" json:"id,omitempty"`
+	PKey      string     `yaml:"pkey,omitempty" mapstructure:"pkey,omitempty" json:"pkey,omitempty"`
+	Path      string     `yaml:"path,omitempty" mapstructure:"path,omitempty" json:"path,omitempty"`
+	Filename  string     `yaml:"filename,omitempty" mapstructure:"filename,omitempty" json:"filename,omitempty"`
+	Prty      string     `yaml:"prty,omitempty" mapstructure:"prty,omitempty" json:"prty,omitempty"`
+	Status    FileStatus `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
+	NumDups   int        `yaml:"num-dups,omitempty" mapstructure:"num-dups,omitempty" json:"num-dups,omitempty"`
+	RowsStats RowsStat   `yaml:"rows-stats" mapstructure:"rows-stats" json:"rows-stats"`
+	Events    []Event    `yaml:"events" mapstructure:"events" json:"events"`
+	TTL       int        `yaml:"ttl,omitempty" mapstructure:"ttl,omitempty" json:"ttl,omitempty"`
 }
 
 func (f *File) enforceDefaultValues() error {
@@ -98,6 +105,11 @@ func (f *File) MustToJson() []byte {
 	}
 
 	return b
+}
+
+func (f *File) AddEvent(evt Event) {
+	const semLogContext = "cos-text-file::add-event"
+	f.Events = append(f.Events, evt)
 }
 
 type StoredFile struct {
