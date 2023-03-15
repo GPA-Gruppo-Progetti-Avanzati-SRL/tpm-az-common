@@ -11,6 +11,12 @@ const (
 	FilePartitionKey     = "cos-text-file"
 	FileNeverExpireTTL   = -1
 	FileDefaultExpireTTL = 3600 * 24 * 30 // Default value is set to 30 days. It will enforced if the ttl value provided has not been set... 0
+
+	StatusAccepted = "accepted"
+	StatusRefused  = "refused"
+	StatusDone     = "done"
+	StatusUploaded = "uploaded"
+	StatusWorking  = "working"
 )
 
 // Note: omitempty removed because they are counters and the 0 value is a meaningful value.
@@ -23,16 +29,15 @@ type RowsStat struct {
 }
 
 type Event struct {
-	Duration    int    `yaml:"duration,omitempty" mapstructure:"duration,omitempty" json:"duration,omitempty"`
-	Path        int    `yaml:"path,omitempty" mapstructure:"path,omitempty" json:"path,omitempty"`
-	Ts          int    `yaml:"ts,omitempty" mapstructure:"ts,omitempty" json:"ts,omitempty"`
-	Type        string `yaml:"type,omitempty" mapstructure:"type,omitempty" json:"type,omitempty"`
-	Description string `yaml:"description,omitempty" mapstructure:"description,omitempty" json:"description,omitempty"`
+	Status   FileStatus `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
+	Duration int        `yaml:"duration,omitempty" mapstructure:"duration,omitempty" json:"duration,omitempty"`
+	Ts       int        `yaml:"ts,omitempty" mapstructure:"ts,omitempty" json:"ts,omitempty"`
 }
 
 type FileStatus struct {
-	Code string `yaml:"cd,omitempty" mapstructure:"cd,omitempty" json:"cd,omitempty"`
-	Text string `yaml:"text,omitempty" mapstructure:"text,omitempty" json:"text,omitempty"`
+	Code   string `yaml:"cd,omitempty" mapstructure:"cd,omitempty" json:"cd,omitempty"`
+	Reason string `yaml:"rsn,omitempty" mapstructure:"rsn,omitempty" json:"rsn,omitempty"`
+	Text   string `yaml:"text,omitempty" mapstructure:"text,omitempty" json:"text,omitempty"`
 }
 
 /*
@@ -107,9 +112,12 @@ func (f *File) MustToJson() []byte {
 	return b
 }
 
-func (f *File) AddEvent(evt Event) {
+func (f *File) AddEvent(evt Event, overrideStatus bool) {
 	const semLogContext = "cos-text-file::add-event"
 	f.Events = append(f.Events, evt)
+	if overrideStatus {
+		f.Status = evt.Status
+	}
 }
 
 type StoredFile struct {

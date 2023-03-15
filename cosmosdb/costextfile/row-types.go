@@ -13,8 +13,9 @@ const (
 )
 
 type RowStatus struct {
-	Code string `yaml:"cd,omitempty" mapstructure:"cd,omitempty" json:"cd,omitempty"`
-	Text string `yaml:"text,omitempty" mapstructure:"text,omitempty" json:"text,omitempty"`
+	Code   string `yaml:"cd,omitempty" mapstructure:"cd,omitempty" json:"cd,omitempty"`
+	Reason string `yaml:"rsn,omitempty" mapstructure:"rsn,omitempty" json:"rsn,omitempty"`
+	Text   string `yaml:"text,omitempty" mapstructure:"text,omitempty" json:"text,omitempty"`
 }
 
 type Row struct {
