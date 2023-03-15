@@ -31,7 +31,7 @@ type RowsStat struct {
 type Event struct {
 	Status   FileStatus `yaml:"status,omitempty" mapstructure:"status,omitempty" json:"status,omitempty"`
 	Duration int        `yaml:"duration,omitempty" mapstructure:"duration,omitempty" json:"duration,omitempty"`
-	Ts       int        `yaml:"ts,omitempty" mapstructure:"ts,omitempty" json:"ts,omitempty"`
+	Ts       string     `yaml:"ts,omitempty" mapstructure:"ts,omitempty" json:"ts,omitempty"`
 }
 
 type FileStatus struct {
