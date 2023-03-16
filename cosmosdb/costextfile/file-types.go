@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/rs/zerolog/log"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -17,6 +18,14 @@ const (
 	StatusDone     = "done"
 	StatusUploaded = "uploaded"
 	StatusWorking  = "working"
+	StatusEmpty    = "empty"
+
+	StatusAcceptedText = "Accepted"
+	StatusRefusedText  = "Refused"
+	StatusDoneText     = "Done"
+	StatusUploadedText = "Uploaded"
+	StatusWorkingText  = "Working"
+	StatusEmptyText    = "Empty"
 )
 
 // Note: omitempty removed because they are counters and the 0 value is a meaningful value.
@@ -114,6 +123,7 @@ func (f *File) MustToJson() []byte {
 
 func (f *File) AddEvent(evt Event, overrideStatus bool) {
 	const semLogContext = "cos-text-file::add-event"
+	evt.Ts = time.Now().Format(time.RFC3339Nano)
 	f.Events = append(f.Events, evt)
 	if overrideStatus {
 		f.Status = evt.Status
