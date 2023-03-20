@@ -10,12 +10,13 @@ import (
 )
 
 type CrawledBlob struct {
-	BlobId       string                  `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
-	NameGroups   []string                `mapstructure:"name-groups,omitempty" yaml:"name-groups,omitempty" json:"name-groups,omitempty"`
-	PathId       string                  `mapstructure:"path-id,omitempty" yaml:"path-id,omitempty" json:"path-id,omitempty"`
-	BlobInfo     azbloblks.BlobInfo      `mapstructure:"info,omitempty" yaml:"info,omitempty" json:"info,omitempty"`
-	ThinkTime    time.Duration           `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
-	LeaseHandler *azbloblks.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
+	BlobId        string                  `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
+	NameGroups    []string                `mapstructure:"name-groups,omitempty" yaml:"name-groups,omitempty" json:"name-groups,omitempty"`
+	PathId        string                  `mapstructure:"path-id,omitempty" yaml:"path-id,omitempty" json:"path-id,omitempty"`
+	BlobInfo      azbloblks.BlobInfo      `mapstructure:"info,omitempty" yaml:"info,omitempty" json:"info,omitempty"`
+	ThinkTime     time.Duration           `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
+	LeaseHandler  *azbloblks.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
+	ListenerIndex int                     `mapstructure:"-" yaml:"-" json:"-"`
 }
 
 type Crawler struct {
@@ -25,8 +26,10 @@ type Crawler struct {
 	parentQuitc chan error
 	wg          *sync.WaitGroup
 
-	listener Listener
+	listeners []Listener
 }
+
+var CrawledBlobZero = CrawledBlob{ListenerIndex: -1}
 
 type Listener interface {
 	Accept(blob CrawledBlob) (time.Duration, bool)
@@ -39,7 +42,7 @@ type Option func(c *Crawler)
 
 func WithListener(l Listener) Option {
 	return func(c *Crawler) {
-		c.listener = l
+		c.listeners = append(c.listeners, l)
 	}
 }
 
@@ -63,8 +66,8 @@ func NewInstance(cfg *Config, wg *sync.WaitGroup, opts ...Option) (Crawler, erro
 		o(&c)
 	}
 
-	if c.listener == nil {
-		c.listener = &logZeroListener{}
+	if len(c.listeners) == 0 {
+		c.listeners = append(c.listeners, &logZeroListener{})
 	}
 	return c, nil
 }
@@ -92,17 +95,20 @@ func (c *Crawler) doWorkLoop() {
 	const semLogContext = "azb-crawler::work-loop"
 	log.Info().Float64("tickInterval-secs", c.cfg.TickInterval.Seconds()).Msg(semLogContext)
 
-	crawledBlob, ok, err := c.next()
-	if c.shouldExit(!ok, err != nil) {
+	crawledBlob, err := c.next()
+	if c.shouldExit(crawledBlob.ListenerIndex < 0, err != nil) {
 		log.Info().Msg(semLogContext + " crawler terminating...")
 		c.WorkerTerminated()
 		c.wg.Done()
 		return
 	}
 
-	c.listener.Start()
+	for i := range c.listeners {
+		log.Info().Int("listener", i).Msg(semLogContext + " starting crawler listener")
+		c.listeners[i].Start()
+	}
 
-	if ok {
+	if crawledBlob.ListenerIndex >= 0 {
 		_ = c.processBlob(crawledBlob)
 	}
 
@@ -110,60 +116,65 @@ func (c *Crawler) doWorkLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			crawledBlob, ok, err = c.next()
-			if c.shouldExit(!ok, err != nil) {
+			crawledBlob, err = c.next()
+			if c.shouldExit(crawledBlob.ListenerIndex < 0, err != nil) {
 				log.Info().Msg(semLogContext + " crawler terminating...")
 				ticker.Stop()
-				c.listener.Close()
+				for i := range c.listeners {
+					log.Info().Int("listener", i).Msg(semLogContext + " closing crawler listener")
+					c.listeners[i].Close()
+				}
 				c.WorkerTerminated()
 				c.wg.Done()
 				return
 			}
 
-			if ok {
+			if crawledBlob.ListenerIndex >= 0 {
 				_ = c.processBlob(crawledBlob)
 			}
 
 		case <-c.quitc:
 			log.Info().Msg(semLogContext + " ending...")
 			ticker.Stop()
-			c.listener.Close()
+			for i := range c.listeners {
+				log.Info().Int("listener", i).Msg(semLogContext + " closing crawler listener")
+				c.listeners[i].Close()
+			}
 			c.wg.Done()
 			return
 		}
 	}
 }
 
-func (c *Crawler) next() (CrawledBlob, bool, error) {
+func (c *Crawler) next() (CrawledBlob, error) {
 	const semLogContext = "azb-crawler::next"
 
 	var crawledBlob CrawledBlob
-	var ok bool
 	var err error
 
 	switch c.cfg.Mode {
 	case ModeTag:
-		crawledBlob, ok, err = c.nextByTag()
+		crawledBlob, err = c.nextByTag()
 	default:
 		log.Warn().Msg(semLogContext + " unrecognized mode")
 	}
 
 	if err != nil {
-		return crawledBlob, false, err
+		return CrawledBlobZero, err
 	}
 
-	if ok {
+	if crawledBlob.ListenerIndex >= 0 {
 		lks, _ := azbloblks.GetLinkedService(c.cfg.StorageName)
 		b2, err := lks.DownloadToFile(crawledBlob.BlobInfo.ContainerName, crawledBlob.BlobInfo.BlobName, filepath.Join(c.cfg.DownloadPath, crawledBlob.BlobInfo.BlobName))
 		if err != nil {
-			return CrawledBlob{}, false, err
+			return CrawledBlobZero, err
 		}
 
 		crawledBlob.BlobInfo.FileName = b2.FileName
-		return crawledBlob, true, nil
+		return crawledBlob, nil
 	}
 
-	return CrawledBlob{}, ok, nil
+	return CrawledBlobZero, nil
 }
 
 func (c *Crawler) shouldExit(isNop bool, isError bool) bool {
@@ -186,20 +197,21 @@ func (c *Crawler) shouldExit(isNop bool, isError bool) bool {
 	return doExit
 }
 
-func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
+func (c *Crawler) nextByTag() (CrawledBlob, error) {
 	const semLogContext = "azb-crawler::next-by-tag"
 
 	lks, _ := azbloblks.GetLinkedService(c.cfg.StorageName)
 
 	tag, ok := c.cfg.GetTagByType(TagValueReady)
 	if !ok {
-		log.Error().Msg(semLogContext + " query tag not found")
+		log.Error().Str("tag-type", string(TagValueReady)).Msg(semLogContext + " query tag not found")
+		return CrawledBlobZero, errors.New("query tag not found")
 	}
 
 	taggedBlobs, err := lks.ListBlobByTag("", c.cfg.TagName, tag.Value, 10)
 	if err != nil {
 		log.Error().Err(err).Msg(semLogContext + " query tag not found")
-		return CrawledBlob{}, false, err
+		return CrawledBlobZero, err
 	}
 
 	for _, b := range taggedBlobs {
@@ -218,8 +230,8 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 
 			b1, err := lks.GetBlobInfo(b.ContainerName, b.BlobName)
 			if err != nil {
-				log.Error().Err(err).Str("blob-name", b.BlobName).Str("container", b.ContainerName).Msg(semLogContext + " impossible to get ")
-				return CrawledBlob{}, false, err
+				log.Error().Err(err).Str("blob-name", b.BlobName).Str("container", b.ContainerName).Msg(semLogContext + " impossible to get info")
+				return CrawledBlobZero, err
 			}
 
 			log.Info().Str("tag-name", c.cfg.TagName).Str("tag-value", tag.Value).Str("container", b1.ContainerName).Str("blob-name", b1.BlobName).Str("lease-state", b1.LeaseState).Msg(semLogContext + " blob found")
@@ -228,33 +240,44 @@ func (c *Crawler) nextByTag() (CrawledBlob, bool, error) {
 				continue
 			}
 
-			crawledBlob := CrawledBlob{BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1, NameGroups: blobNameParts}
+			crawledBlob := CrawledBlob{BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1, NameGroups: blobNameParts, ListenerIndex: -1}
 
-			crawledBlob.ThinkTime, ok = c.listener.Accept(crawledBlob)
-			if !ok {
-				log.Info().Str("container", b.ContainerName).Str("blob-name", b.BlobName).Msg(semLogContext + " blob not accepted by listener")
+			for i := range c.listeners {
+				crawledBlob.ThinkTime, ok = c.listeners[i].Accept(crawledBlob)
+				if ok {
+					log.Info().Str("container", b.ContainerName).Int("listener", i).Str("blob-name", b.BlobName).Msg(semLogContext + " blob accepted by listener")
+					crawledBlob.ListenerIndex = i
+					break
+				} else {
+					log.Info().Str("container", b.ContainerName).Int("listener", i).Str("blob-name", b.BlobName).Msg(semLogContext + " blob NOT accepted by listener")
+				}
+			}
+
+			if crawledBlob.ListenerIndex < 0 {
+				log.Info().Str("container", b.ContainerName).Str("blob-name", b.BlobName).Msg(semLogContext + " blob not accepted by any listener")
 				continue
 			}
 
 			leaseHandler, err := lks.AcquireLease(b1.ContainerName, b1.BlobName, 60, true)
 			if err != nil {
 				log.Info().Err(err).Str("container", b.ContainerName).Str("blob-name", b.BlobName).Str("lease-state", b1.LeaseState).Msg(semLogContext + " lease cannot be acquired")
+				continue
 			}
 
 			crawledBlob.LeaseHandler = leaseHandler
-			return crawledBlob, true, nil
+			return crawledBlob, nil
 		}
 	}
 
 	log.Info().Str("tag-name", c.cfg.TagName).Str("tag-value", tag.Value).Msg(semLogContext + " no blobs found by tag")
-	return CrawledBlob{}, false, nil
+	return CrawledBlobZero, nil
 }
 
 func (c *Crawler) processBlob(crawledBlob CrawledBlob) error {
 	const semLogContext = "azb-crawler::process-blob"
 
 	log.Info().Str("blob-info", crawledBlob.BlobInfo.BlobName).Msg(semLogContext + " ...enqueuing")
-	c.listener.Process(crawledBlob)
+	c.listeners[crawledBlob.ListenerIndex].Process(crawledBlob)
 	if crawledBlob.ThinkTime > 0 {
 		log.Info().Dur("think-time", crawledBlob.ThinkTime).Msg(semLogContext + " sleeping as instructed by listener")
 		time.Sleep(crawledBlob.ThinkTime)
