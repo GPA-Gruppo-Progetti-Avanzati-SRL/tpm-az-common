@@ -42,7 +42,9 @@ type Option func(c *Crawler)
 
 func WithListener(l Listener) Option {
 	return func(c *Crawler) {
-		c.listeners = append(c.listeners, l)
+		if l != nil {
+			c.listeners = append(c.listeners, l)
+		}
 	}
 }
 
