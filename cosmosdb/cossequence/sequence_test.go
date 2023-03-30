@@ -12,6 +12,7 @@ import (
 const (
 	DbName         = "rtp_bconn_db"
 	CollectionName = "sequence"
+	// DbName         = "projectADB1"
 
 	AZCOMMON_CDB_ENDPOINT = "AZCOMMON_CDB_ENDPOINT"
 	AZCOMMON_CDB_ACCTKEY  = "AZCOMMON_CDB_ACCTKEY"
