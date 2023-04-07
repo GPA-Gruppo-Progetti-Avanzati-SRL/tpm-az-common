@@ -32,7 +32,7 @@ const (
 
 type RowsStat struct {
 	Total     int `yaml:"total" mapstructure:"total" json:"total"`
-	Processed int `yaml:"processed" mapstructure:"processed" json:"processed"`
+	Processed int `yaml:"processed,omitempty" mapstructure:"processed,omitempty" json:"processed,omitempty"`
 	Valid     int `yaml:"valid" mapstructure:"valid" json:"valid"`
 	Failed    int `yaml:"failed" mapstructure:"failed" json:"failed"`
 }

@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v0.3.3
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.6.1
-	github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common v0.0.89
+	github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common v0.0.91
 	github.com/btnguyen2k/gocosmos v0.2.0
 	github.com/google/uuid v1.3.0
 	github.com/opentracing/opentracing-go v1.2.0
