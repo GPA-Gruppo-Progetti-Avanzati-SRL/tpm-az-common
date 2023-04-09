@@ -30,7 +30,9 @@ var PreconditionFailed = &CosError{Code: http.StatusPreconditionFailed, Text: "p
 func GetErrorStatusAndMessage(err error) (int, string) {
 	const semLogContext = "cos-util::get-error-status-and-message"
 	if respErr, ok := err.(*azcore.ResponseError); ok {
-		log.Error().Err(err).Msg(semLogContext)
+		if respErr.StatusCode != http.StatusNotFound {
+			log.Error().Err(err).Msg(semLogContext)
+		}
 		return respErr.StatusCode, respErr.ErrorCode
 	}
 	return 500, "internal server error"
