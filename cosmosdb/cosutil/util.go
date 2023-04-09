@@ -28,15 +28,16 @@ var PreconditionFailed = &CosError{Code: http.StatusPreconditionFailed, Text: "p
 // var InternalServerError = &CosError{Code: http.StatusInternalServerError, Text: "internal server error"}
 
 func GetErrorStatusAndMessage(err error) (int, string) {
+	const semLogContext = "cos-util::get-error-status-and-message"
 	if respErr, ok := err.(*azcore.ResponseError); ok {
+		log.Error().Err(err).Msg(semLogContext)
 		return respErr.StatusCode, respErr.ErrorCode
 	}
 	return 500, "internal server error"
 }
 
 func MapAzCoreError(err error) error {
-
-	const semLogContext = "az error: mapping az-core error"
+	const semLogContext = "cos-util::map-az-core-error"
 
 	var zeroLogEvt *zerolog.Event
 	st, msg := GetErrorStatusAndMessage(err)
