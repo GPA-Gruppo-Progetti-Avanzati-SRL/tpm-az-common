@@ -128,7 +128,8 @@ func (lh *LeaseHandler) renewLoop() {
 	log.Info().Float64("tickInterval-secs", tickInterval.Seconds()).Msg(semLogContext + " starting...")
 
 	ticker := time.NewTicker(tickInterval)
-	for {
+	var exitLoop bool
+	for !exitLoop {
 		select {
 		case <-ticker.C:
 			err := lh.lks.RenewLease(lh.ContainerName, lh.BlobName, lh.LeaseId)
@@ -136,7 +137,8 @@ func (lh *LeaseHandler) renewLoop() {
 				log.Error().Err(err)
 			}
 		case <-lh.autoRenewCh:
-			break
+			ticker.Stop()
+			exitLoop = true
 		}
 	}
 
