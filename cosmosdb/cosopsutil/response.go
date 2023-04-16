@@ -1,4 +1,4 @@
-package cosutil
+package cosopsutil
 
 import (
 	"fmt"

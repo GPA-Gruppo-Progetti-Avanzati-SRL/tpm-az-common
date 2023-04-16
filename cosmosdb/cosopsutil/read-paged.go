@@ -1,4 +1,4 @@
-package cosutil
+package cosopsutil
 
 import (
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/coslks"
