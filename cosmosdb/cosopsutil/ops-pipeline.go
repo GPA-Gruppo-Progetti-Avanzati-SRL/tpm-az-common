@@ -134,9 +134,11 @@ func reducePipeline(outBound chan PipelineDataFrame, p DataframeProcessor) error
 	numDf := 0
 	logger := util.GeometricTraceLogger{}
 	for dataframe := range outBound {
+		numDf++
 		if logger.CheckAndSetOnOff() {
-			log.Trace().Int("df-num", numDf).Str("df-id", dataframe.id).Msg(semLogContext)
+			logger.LogEvent(log.Trace().Int("df-num", numDf).Str("df-id", dataframe.id), semLogContext)
 		}
+
 	}
 
 	log.Info().Float64("elapsed", time.Since(beginOfProcessing).Seconds()).Msg(semLogContext)
