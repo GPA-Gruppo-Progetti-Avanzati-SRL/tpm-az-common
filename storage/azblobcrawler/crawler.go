@@ -98,6 +98,9 @@ func (c *Crawler) doWorkLoop() {
 	log.Info().Float64("tickInterval-secs", c.cfg.TickInterval.Seconds()).Msg(semLogContext)
 
 	crawledBlob, err := c.next()
+	if err != nil {
+		log.Error().Err(err).Msg(semLogContext)
+	}
 	if c.shouldExit(crawledBlob.ListenerIndex < 0, err != nil) {
 		log.Info().Msg(semLogContext + " crawler terminating...")
 		c.WorkerTerminated()
@@ -119,6 +122,9 @@ func (c *Crawler) doWorkLoop() {
 		select {
 		case <-ticker.C:
 			crawledBlob, err = c.next()
+			if err != nil {
+				log.Error().Err(err).Msg(semLogContext)
+			}
 			if c.shouldExit(crawledBlob.ListenerIndex < 0, err != nil) {
 				log.Info().Msg(semLogContext + " crawler terminating...")
 				ticker.Stop()
