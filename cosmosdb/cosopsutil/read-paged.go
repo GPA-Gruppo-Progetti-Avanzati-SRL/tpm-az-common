@@ -67,7 +67,7 @@ func NewPagedReader(lks *coslks.LinkedService, collectionId, queryText string, o
 		cosquery.ResponseDecoderFunc(QueryResponseDecoderFunc),
 		cosquery.WithConnectionString(lks.ConnectionString()),
 		cosquery.WithDbName(lks.DbName()),
-		cosquery.WithCollectionName(lks.CollectionName("files")),
+		cosquery.WithCollectionName(lks.CollectionName(collectionId)),
 		cosquery.WithQueryText(queryText),
 		cosquery.WithPageSize(queryOpts.PageSize),
 	)
