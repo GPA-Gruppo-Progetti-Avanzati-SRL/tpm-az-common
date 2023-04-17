@@ -44,7 +44,9 @@ func (pr *PagedReader) Read() ([]Document, error) {
 		qr := resp.(*QueryResponse)
 		for i, d := range qr.Documents {
 			pr.numReads++
-			pr.logger.LogEvent(log.Trace().Int("num-reads", i).Int("page-number", pr.pageNumber), semLogContext)
+			if pr.logger.CheckAndSetOnOff() {
+				pr.logger.LogEvent(log.Trace().Int("num-reads", i).Int("page-number", pr.pageNumber), semLogContext)
+			}
 			docs = append(docs, d)
 		}
 	}

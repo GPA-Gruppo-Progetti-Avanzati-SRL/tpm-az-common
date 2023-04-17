@@ -34,7 +34,9 @@ func DeleteAll(lks *coslks.LinkedService, collectionId, queryText string) (int, 
 	hasNext := true
 	for hasNext {
 		for i, r := range rows {
-			logger.LogEvent(log.Trace().Str("row-id", r.Id).Int("num-row", i), semLogContext)
+			if logger.CheckAndSetOnOff() {
+				logger.LogEvent(log.Trace().Str("row-id", r.Id).Int("num-row", i), semLogContext)
+			}
 			_, err = cli.DeleteItem(context.Background(), azcosmos.NewPartitionKeyString(r.PKey), r.Id, nil)
 			if err != nil {
 				np, nr := pr.Count()
