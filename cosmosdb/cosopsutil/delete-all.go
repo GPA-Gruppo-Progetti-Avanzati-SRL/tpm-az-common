@@ -8,7 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func DeleteAll(lks *coslks.LinkedService, collectionId, queryText string) (int, error) {
+func DeleteAll(lks *coslks.LinkedService, collectionId, queryText string, opts ...Option) (int, error) {
 	const semLogContext = "cos-util::delete-all"
 
 	cli, err := coslks.GetCosmosDbContainer("default", collectionId, false)
@@ -17,7 +17,7 @@ func DeleteAll(lks *coslks.LinkedService, collectionId, queryText string) (int, 
 		return 0, err
 	}
 
-	pr, err := NewPagedReader(lks, collectionId, queryText)
+	pr, err := NewPagedReader(lks, collectionId, queryText, opts...)
 	if err != nil {
 		log.Error().Err(err).Str("coll-id", collectionId).Str("query", queryText).Msg(semLogContext)
 		return 0, err

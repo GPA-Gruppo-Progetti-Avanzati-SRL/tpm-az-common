@@ -247,7 +247,7 @@ func (c *Crawler) nextByTag() (CrawledBlob, error) {
 			for i := range c.listeners {
 				crawledBlob.ThinkTime, ok = c.listeners[i].Accept(crawledBlob)
 				if ok {
-					log.Info().Str("container", b.ContainerName).Int("listener", i).Str("blob-name", b.BlobName).Msg(semLogContext + " blob accepted by listener")
+					log.Info().Str("container", b.ContainerName).Int("listener", i).Float64("expected-duration-s", crawledBlob.ThinkTime.Seconds()).Str("blob-name", b.BlobName).Msg(semLogContext + " blob accepted by listener")
 					crawledBlob.ListenerIndex = i
 					break
 				} else {
@@ -281,7 +281,7 @@ func (c *Crawler) processBlob(crawledBlob CrawledBlob) error {
 	log.Info().Str("blob-info", crawledBlob.BlobInfo.BlobName).Msg(semLogContext + " ...enqueuing")
 	c.listeners[crawledBlob.ListenerIndex].Process(crawledBlob)
 	if crawledBlob.ThinkTime > 0 {
-		log.Info().Dur("think-time", crawledBlob.ThinkTime).Msg(semLogContext + " sleeping as instructed by listener")
+		log.Info().Float64("think-time-secs", crawledBlob.ThinkTime.Seconds()).Msg(semLogContext + " sleeping as instructed by listener")
 		time.Sleep(crawledBlob.ThinkTime)
 	}
 	return nil

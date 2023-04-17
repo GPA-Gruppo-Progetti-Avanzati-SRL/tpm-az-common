@@ -55,8 +55,13 @@ func (pr *PagedReader) Read() ([]Document, error) {
 	return docs, nil
 }
 
-func NewPagedReader(lks *coslks.LinkedService, collectionId, queryText string) (*PagedReader, error) {
+func NewPagedReader(lks *coslks.LinkedService, collectionId, queryText string, opts ...Option) (*PagedReader, error) {
 	const semLogContext = "page-reade::new"
+
+	queryOpts := PagedReaderDefaultOptions
+	for _, o := range opts {
+		o(&queryOpts)
+	}
 
 	qc, err := cosquery.NewClientInstance(
 		cosquery.ResponseDecoderFunc(QueryResponseDecoderFunc),
@@ -64,6 +69,7 @@ func NewPagedReader(lks *coslks.LinkedService, collectionId, queryText string) (
 		cosquery.WithDbName(lks.DbName()),
 		cosquery.WithCollectionName(lks.CollectionName("files")),
 		cosquery.WithQueryText(queryText),
+		cosquery.WithPageSize(queryOpts.PageSize),
 	)
 
 	if err != nil {
