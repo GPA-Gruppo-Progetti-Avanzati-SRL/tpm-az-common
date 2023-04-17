@@ -22,7 +22,7 @@ func (v *DeleteVisitor) Process(phase string, df PipelineDataFrame) error {
 
 	const semLogContext = "cos-ops-util::delete-visitor"
 	if v.logger.CheckAndSetOnOff() {
-		v.logger.LogEvent(log.Trace().Str("id", df.id).Str("pkey", df.pkey), semLogContext)
+		v.logger.LogEvent(log.Trace().Int("num-dels", v.numDels).Str("id", df.id).Str("pkey", df.pkey), semLogContext)
 	}
 
 	_, err := v.cli.DeleteItem(context.Background(), azcosmos.NewPartitionKeyString(df.pkey), df.id, nil)

@@ -108,12 +108,8 @@ func processDataFrame(idGo int, done chan struct{}, inBound <-chan PipelineDataF
 	logger := util.GeometricTraceLogger{}
 	for dataframe := range inBound {
 		numDataFrames++
-		if log.Trace().Enabled() {
-			log.Trace().Int("id-go", idGo).Int(semLogNumDataFrames, numDataFrames).Msg(semLogContext)
-		} else {
-			if logger.CheckAndSetOnOff() {
-				logger.LogEvent(log.Info().Int("id-go", idGo).Int(semLogNumDataFrames, numDataFrames), semLogContext)
-			}
+		if logger.CheckAndSetOnOff() {
+			logger.LogEvent(log.Trace().Int("id-go", idGo).Int(semLogNumDataFrames, numDataFrames), semLogContext)
 		}
 
 		err := p.Process("process-data-frame", dataframe)
