@@ -133,12 +133,8 @@ func reducePipeline(outBound chan PipelineDataFrame, p DataframeProcessor) error
 
 	logger := util.GeometricTraceLogger{}
 	for dataframe := range outBound {
-		if log.Trace().Enabled() {
+		if logger.CheckAndSetOnOff() {
 			log.Trace().Interface("row-number", dataframe.id).Msg(semLogContext)
-		} else {
-			if logger.CheckAndSetOnOff() {
-				logger.LogEvent(log.Info().Interface("row-number", dataframe.id), semLogContext)
-			}
 		}
 	}
 
