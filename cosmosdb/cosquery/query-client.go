@@ -7,6 +7,7 @@ import (
 	"github.com/btnguyen2k/gocosmos"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
+	"net/http"
 	"time"
 )
 
@@ -208,7 +209,8 @@ func (s *QueryClient) executeQuery() (Response, error) {
 		s.span.SetTag("req.page-number", s.pageNumber)
 	}
 
-	if resp.StatusCode == 200 {
+	switch resp.StatusCode {
+	case http.StatusOK:
 		r, err := s.responseDecoder.Decode(resp)
 		if err != nil {
 			return nil, err
@@ -221,6 +223,12 @@ func (s *QueryClient) executeQuery() (Response, error) {
 			if resp.ContinuationToken != "" {
 				s.span.SetTag("continuation", resp.ContinuationToken)
 			}
+		}
+		return r, nil
+	case http.StatusNotFound:
+		r, err := s.responseDecoder.Decode(resp)
+		if err != nil {
+			return nil, err
 		}
 		return r, nil
 	}

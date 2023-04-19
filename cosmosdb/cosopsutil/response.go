@@ -30,19 +30,21 @@ func (dr *QueryResponse) NumDocs() int {
 }
 
 func QueryResponseDecoderFunc(resp *gocosmos.RespQueryDocs) (cosquery.Response, error) {
-	var err error
 	e := &QueryResponse{}
-	for _, d := range resp.Documents {
-		if m, ok := d.(map[string]interface{}); ok {
-			newd := Document{Id: m["id"].(string), PKey: m["pkey"].(string)}
-			e.Documents = append(e.Documents, newd)
-		} else {
-			err = fmt.Errorf("unrecognized document type %T", d)
-			return e, err
+	if resp != nil {
+		var err error
+		for _, d := range resp.Documents {
+			if m, ok := d.(map[string]interface{}); ok {
+				newd := Document{Id: m["id"].(string), PKey: m["pkey"].(string)}
+				e.Documents = append(e.Documents, newd)
+			} else {
+				err = fmt.Errorf("unrecognized document type %T", d)
+				return e, err
+			}
 		}
-	}
 
-	e.RespCount = len(e.Documents)
-	// err := json.NewDecoder(bytes.NewReader(resp.RespBody)).Decode(e)
+		e.RespCount = len(e.Documents)
+		// err := json.NewDecoder(bytes.NewReader(resp.RespBody)).Decode(e)
+	}
 	return e, nil
 }
