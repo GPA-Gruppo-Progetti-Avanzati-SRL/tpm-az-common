@@ -1,0 +1,15 @@
+cos-name: "default"
+endpoint: "${LEAS_CAB_COSDB_ENDPOINT}"
+account-key: "${LEAS_CAB_COSDB_ACCTKEY}"
+# db:
+#   id: "leas_cab_db"
+#   name: "${LEAS_CAB_COSDB_DBNAME}"
+#   collections:
+#     - id: campaign
+#       name: tokens
+#     - id: tokens
+#       name: tokens
+#     - id: bearers
+#       name: tokens
+#     - id: files
+#       name: tokens

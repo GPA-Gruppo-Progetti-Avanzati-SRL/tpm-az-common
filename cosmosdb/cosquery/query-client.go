@@ -100,7 +100,7 @@ func (s *QueryClient) valid() bool {
 
 	v := s.client != nil
 	if s.responseDecoder == nil {
-		s.responseDecoder = ResponseDecoderFunc(DefaultResponseDecoderFunc)
+		s.responseDecoder = ResponseDecoderFunc(DocumentMapResponseDecoderFunc)
 	}
 
 	return v
@@ -169,7 +169,7 @@ func (s *QueryClient) Next() (Response, error) {
 	if s.continuationToken != "" {
 		s.queryRequest.ContinuationToken = s.continuationToken
 	} else {
-		return nil, errors.New("no continuation token present")
+		return Response{}, errors.New("no continuation token present")
 	}
 
 	return s.executeQuery()
@@ -213,12 +213,12 @@ func (s *QueryClient) executeQuery() (Response, error) {
 	case http.StatusOK:
 		r, err := s.responseDecoder.Decode(resp)
 		if err != nil {
-			return nil, err
+			return Response{}, err
 		}
 
 		if s.withTrace {
-			s.span.SetTag("query.num-docs", r.NumDocs())
-			s.span.SetTag("query.count", r.Count())
+			s.span.SetTag("query.num-docs", len(r.Docs))
+			s.span.SetTag("query.count", r.RespCount)
 
 			if resp.ContinuationToken != "" {
 				s.span.SetTag("continuation", resp.ContinuationToken)
@@ -228,10 +228,10 @@ func (s *QueryClient) executeQuery() (Response, error) {
 	case http.StatusNotFound:
 		r, err := s.responseDecoder.Decode(resp)
 		if err != nil {
-			return nil, err
+			return Response{}, err
 		}
 		return r, nil
 	}
 
-	return nil, resp.Error()
+	return Response{}, resp.Error()
 }

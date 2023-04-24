@@ -1,47 +1,36 @@
-package cosopsutil
+package cosops
 
 import (
 	"errors"
+	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosquery"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common/util"
 	"github.com/rs/zerolog/log"
 	"sync"
-	"time"
 )
-
-type DataframeProcessor interface {
-	Process(phase string, df PipelineDataFrame) error
-	Count() int
-}
-
-type PipelineDataFrame struct {
-	id   string
-	pkey string
-	err  error
-}
 
 type Pipeline struct {
 	concurrency int
-	paths       chan PipelineDataFrame
+	paths       chan DataFrame
 	errs        chan error
 	done        chan struct{}
 }
 
-func rowPipeline(docs []Document, p DataframeProcessor, opts ...Option) error {
+func rowPipeline(docs []cosquery.Document, p Visitor, opts ...Option) error {
 
 	const semLogContext = "cos-pipeline::run"
 
-	pipelineOpts := DefaultPipelineOptions
+	pipelineOpts := ReadAndVisitDefaultOptions
 	for _, o := range opts {
 		o(&pipelineOpts)
 	}
 
-	log.Info().Int("concurrency", pipelineOpts.Concurrency).Msg("starting doc pipeline...")
+	log.Info().Int("concurrency", pipelineOpts.Concurrency).Msg(semLogContext + " starting...")
 
 	done := make(chan struct{})
 	defer close(done)
 
 	downloadInbound, errc := sourcePipeline(done, docs, p)
-	downloadOutbound := make(chan PipelineDataFrame)
+	downloadOutbound := make(chan DataFrame)
 	var wg sync.WaitGroup
 
 	wg.Add(pipelineOpts.Concurrency)
@@ -70,11 +59,11 @@ func rowPipeline(docs []Document, p DataframeProcessor, opts ...Option) error {
 	return nil
 }
 
-func sourcePipeline(done <-chan struct{}, docs []Document, p DataframeProcessor) (<-chan PipelineDataFrame, <-chan error) {
+func sourcePipeline(done <-chan struct{}, docs []cosquery.Document, p Visitor) (<-chan DataFrame, <-chan error) {
 
 	const semLogContext = "cvm-2-lease-listener-pipeline::source"
 
-	paths := make(chan PipelineDataFrame)
+	paths := make(chan DataFrame)
 	errc := make(chan error, 1)
 
 	go func() {
@@ -83,9 +72,10 @@ func sourcePipeline(done <-chan struct{}, docs []Document, p DataframeProcessor)
 		rowNumber := 0
 		for _, d := range docs {
 
+			pk, id := d.GetKeys()
 			rowNumber++
 			select {
-			case paths <- PipelineDataFrame{id: d.Id, pkey: d.PKey}:
+			case paths <- DataFrame{id: id, pkey: pk}:
 			case <-done:
 				log.Trace().Msg("data source cancelled")
 				errc <- errors.New("data source cancelled")
@@ -99,7 +89,7 @@ func sourcePipeline(done <-chan struct{}, docs []Document, p DataframeProcessor)
 	return paths, errc
 }
 
-func processDataFrame(idGo int, done chan struct{}, inBound <-chan PipelineDataFrame, outBound chan<- PipelineDataFrame, p DataframeProcessor) {
+func processDataFrame(idGo int, done chan struct{}, inBound <-chan DataFrame, outBound chan<- DataFrame, p Visitor) {
 
 	const semLogContext = "cos-pipeline::process-dataframe"
 	const semLogNumDataFrames = "num-data-frames"
@@ -112,7 +102,7 @@ func processDataFrame(idGo int, done chan struct{}, inBound <-chan PipelineDataF
 			logger.LogEvent(log.Trace().Int("id-go", idGo).Int(semLogNumDataFrames, numDataFrames), semLogContext)
 		}
 
-		err := p.Process("process-data-frame", dataframe)
+		err := p.Visit("process-data-frame", dataframe)
 		dataframe.err = err
 
 		select {
@@ -126,10 +116,8 @@ func processDataFrame(idGo int, done chan struct{}, inBound <-chan PipelineDataF
 	log.Trace().Int("id-go", idGo).Int(semLogNumDataFrames, numDataFrames).Msg(semLogContext + " inbound messages consumed")
 }
 
-func reducePipeline(outBound chan PipelineDataFrame, p DataframeProcessor) error {
+func reducePipeline(outBound chan DataFrame, p Visitor) error {
 	const semLogContext = "cos-pipeline::reduce"
-
-	beginOfProcessing := time.Now()
 
 	numDf := 0
 	logger := util.GeometricTraceLogger{}
@@ -138,9 +126,9 @@ func reducePipeline(outBound chan PipelineDataFrame, p DataframeProcessor) error
 		if logger.CheckAndSetOnOff() {
 			logger.LogEvent(log.Trace().Int("df-num", numDf).Str("df-id", dataframe.id), semLogContext)
 		}
-
 	}
 
-	log.Info().Float64("elapsed", time.Since(beginOfProcessing).Seconds()).Msg(semLogContext)
+	log.Info().Int("num-dataframes", numDf).Msg(semLogContext + " reduced")
+
 	return nil
 }

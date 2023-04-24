@@ -1,0 +1,28 @@
+db: rtp_bconn_db
+# lks-file: lks-sample.yml
+lks-file: cosmosdb/cmds/cos-cli/lks-sample.yml
+log-level: 1
+ops:
+  - cmd: select
+    query: "select c.id, c.pkey from c where c[\"tok-ctx-id\"] = 'BPMGM2' and is_defined(c[\"actor-id\"])"
+    cnt: tokens
+    concurrency-level: 3
+    delete: true
+    print: "{{ .pkey }}:{{ .id }}:{{ .json }}"
+  - cmd: select
+    cnt: tokens
+    query: "select * from c where c.pkey = '${id}'"
+    context-query: "select * from c where c.pkey = 'cos-text-file'"
+    delete: true
+    concurrency-level: 3
+    page-size: 100
+    limit: 0
+    print: "{{ .pkey }}:{{ .id }}:{{ .json }}"
+  - cmd: select
+    cnt: tokens
+    query: "select * from c where c.pkey = 'cos-text-file'"
+    delete: true
+    concurrency-level: 1
+    page-size: 100
+    limit: 0
+    print: "{{ .pkey }}:{{ .id }}:{{ .json }}"

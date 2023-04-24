@@ -23,25 +23,26 @@ func (c *Config) PostProcess() error {
 	return nil
 }
 
-func (c *Config) GetCollectionName(aCollectionId string) string {
+func (c *Config) GetCollectionNameById(aCollectionId string) string {
 
+	const semLogContext = "cos-lks::get-collection-name-by-id"
 	for _, c := range c.Collections {
 		if c.Id == aCollectionId {
 			return c.Name
 		}
 	}
 
-	log.Error().Str("coll-id", aCollectionId).Msg("can't find collection by id")
-	return aCollectionId
+	log.Warn().Str("coll-id", aCollectionId).Msg(semLogContext + " not found")
+	return ""
 }
 
-func (c *Config) GetDbName(id string) string {
+func (c *Config) GetDbNameById(id string) string {
 
 	const semLogContext = "cos-lks::get-db-name-by-id"
 	if c.DB.Id == id {
 		return c.DB.Name
 	}
 
-	log.Error().Str("db-id", id).Msg(semLogContext + " can't find db by id")
+	log.Warn().Str("db-id", id).Msg(semLogContext + " not found")
 	return ""
 }

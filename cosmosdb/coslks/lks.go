@@ -1,6 +1,7 @@
 package coslks
 
 import (
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosutil"
 )
@@ -14,12 +15,47 @@ func NewLinkedServiceWithConfig(cfg Config) (*LinkedService, error) {
 	return &lks, nil
 }
 
+/*
 func (lks *LinkedService) DbName() string {
 	return lks.cfg.DB.Name
 }
+*/
 
-func (lks *LinkedService) CollectionName(cId string) string {
-	return lks.cfg.GetCollectionName(cId)
+func (lks *LinkedService) GetCollectionNameById(cId string, onNotFound string) string {
+	n := lks.cfg.GetCollectionNameById(cId)
+	if n != "" {
+		return n
+	}
+
+	return onNotFound
+}
+
+func (lks *LinkedService) MustGetCollectionNameById(cId string) string {
+	const semLogContext = "cos-lks::must-get-collection-name-by-id"
+	n := lks.cfg.GetCollectionNameById(cId)
+	if n == "" {
+		panic(fmt.Errorf(semLogContext+" not found: %s", cId))
+	}
+	return n
+}
+
+func (lks *LinkedService) GetDbNameById(dbId string, onNotFound string) string {
+	n := lks.cfg.GetDbNameById(dbId)
+	if n != "" {
+		return n
+	}
+
+	return onNotFound
+}
+
+func (lks *LinkedService) MustGetDbNameById(dbId string) string {
+	const semLogContext = "cos-lks::must-get-db-name-by-id"
+	n := lks.cfg.GetDbNameById(dbId)
+	if n == "" {
+		panic(fmt.Errorf(semLogContext+" not found: %s", dbId))
+	}
+
+	return n
 }
 
 func (lks *LinkedService) ConnectionString() string {
@@ -35,4 +71,15 @@ func (lks *LinkedService) NewClient(enableContentResponseOnWrite bool) (*azcosmo
 	}
 	client, err := azcosmos.NewClientWithKey(lks.cfg.Endpoint, cred, &opts)
 	return client, err
+}
+
+func (lks *LinkedService) GetCosmosDbContainer(dbName, collectionName string, enableContentResponseOnWrite bool) (*azcosmos.ContainerClient, error) {
+
+	cli, err := lks.NewClient(enableContentResponseOnWrite)
+	if err != nil {
+		return nil, err
+	}
+
+	container, err := cli.NewContainer(dbName, collectionName)
+	return container, err
 }
