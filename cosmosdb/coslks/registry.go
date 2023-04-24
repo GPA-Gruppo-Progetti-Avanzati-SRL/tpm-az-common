@@ -76,6 +76,6 @@ func GetCosmosDbContainer(cosName string, collectionId string, enableContentResp
 		return nil, err
 	}
 
-	container, err := cli.NewContainer(lks.MustGetDbNameById(lks.cfg.DB.Id), lks.MustGetCollectionNameById(collectionId))
+	container, err := cli.NewContainer(lks.GetDbName(), lks.MustGetCollectionNameById(collectionId))
 	return container, err
 }

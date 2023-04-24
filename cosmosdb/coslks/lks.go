@@ -15,12 +15,6 @@ func NewLinkedServiceWithConfig(cfg Config) (*LinkedService, error) {
 	return &lks, nil
 }
 
-/*
-func (lks *LinkedService) DbName() string {
-	return lks.cfg.DB.Name
-}
-*/
-
 func (lks *LinkedService) GetCollectionNameById(cId string, onNotFound string) string {
 	n := lks.cfg.GetCollectionNameById(cId)
 	if n != "" {
@@ -37,6 +31,10 @@ func (lks *LinkedService) MustGetCollectionNameById(cId string) string {
 		panic(fmt.Errorf(semLogContext+" not found: %s", cId))
 	}
 	return n
+}
+
+func (lks *LinkedService) GetDbName() string {
+	return lks.cfg.DB.Name
 }
 
 func (lks *LinkedService) GetDbNameById(dbId string, onNotFound string) string {
