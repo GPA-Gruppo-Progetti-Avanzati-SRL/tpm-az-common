@@ -64,7 +64,7 @@ func NewCosmosDbClient(cosName string, enableContentResponseOnWrite bool) (*azco
 	return lks.NewClient(enableContentResponseOnWrite)
 }
 
-func GetCosmosDbContainer(cosName string, dbName, collectionName string, enableContentResponseOnWrite bool) (*azcosmos.ContainerClient, error) {
+func GetCosmosDbContainer(cosName string, collectionId string, enableContentResponseOnWrite bool) (*azcosmos.ContainerClient, error) {
 
 	lks, err := GetLinkedService(cosName)
 	if err != nil {
@@ -76,6 +76,6 @@ func GetCosmosDbContainer(cosName string, dbName, collectionName string, enableC
 		return nil, err
 	}
 
-	container, err := cli.NewContainer(dbName, collectionName)
+	container, err := cli.NewContainer(lks.MustGetDbNameById(lks.cfg.DB.Id), lks.MustGetCollectionNameById(collectionId))
 	return container, err
 }
