@@ -49,7 +49,7 @@ func (f ResponseDecoderFunc) Decode(resp *gocosmos.RespQueryDocs) (Response, err
 type Response struct {
 	RespRid   string     `yaml:"_rid" mapstructure:"_rid" json:"_rid"`
 	RespCount int        `yaml:"_count" mapstructure:"_count" json:"_count"`
-	Docs      []Document `yaml:"Documents" mapstructure:"Documents" json:"Documents"`
+	Docs      []Document `yaml:"documents,omitempty" mapstructure:"documents,omitempty" json:"documents,omitempty"`
 }
 
 /*
