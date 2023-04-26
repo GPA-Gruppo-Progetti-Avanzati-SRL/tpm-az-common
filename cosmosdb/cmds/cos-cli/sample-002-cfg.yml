@@ -1,4 +1,4 @@
-db: rtp_bconn_db
+db: leas_cab_db
 lks-file: lks-cfg-sample.yml
 #lks-file: cosmosdb/cmds/cos-cli/lks-sample.yml
 log-level: 1

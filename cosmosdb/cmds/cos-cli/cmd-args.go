@@ -271,6 +271,17 @@ func ParseCmdLineArgs() (CmdLineArgs, error) {
 		}
 	}
 
+	if cfg, err := validateCosmosParams(args.LksFileName, args.Broker, args.Db); err != nil {
+		flag.Usage()
+		return args, err
+	} else {
+		args.LksConfig = cfg
+		db := cfg.GetDbNameById(args.Db)
+		if db != "" {
+			args.Db = db
+		}
+	}
+
 	for i, op := range args.Operations {
 		if op.Cmd == "" || !valueIn(op.Cmd, commands) {
 			flag.Usage()
@@ -279,20 +290,14 @@ func ParseCmdLineArgs() (CmdLineArgs, error) {
 
 		switch op.Cmd {
 		case CmdSelect:
-			if cfg, err := validateCosmosParams(args.LksFileName, args.Broker, args.Db, op.Container); err != nil {
+			if op.Container == "" {
 				flag.Usage()
-				return args, err
-			} else {
-				args.LksConfig = cfg
-				cnt := cfg.GetCollectionNameById(op.Container)
-				if cnt != "" {
-					args.Operations[i].Container = cnt
-				}
+				return args, errors.New("container name not specified")
+			}
 
-				db := cfg.GetDbNameById(args.Db)
-				if db != "" {
-					args.Db = db
-				}
+			cnt := args.LksConfig.GetCollectionNameById(op.Container)
+			if cnt != "" {
+				args.Operations[i].Container = cnt
 			}
 
 			if op.QueryText == "" {
@@ -342,17 +347,13 @@ func valueIn(s string, values []string) bool {
 	return false
 }
 
-func validateCosmosParams(cfgFileName, cosmosName, db, cnt string) (*coslks.Config, error) {
+func validateCosmosParams(cfgFileName, cosmosName, db string) (*coslks.Config, error) {
 	if cosmosName == "" {
 		return nil, errors.New("cosmos instance config name not specified")
 	}
 
 	if db == "" {
 		return nil, errors.New("db name not specified")
-	}
-
-	if cnt == "" {
-		return nil, errors.New("container name not specified")
 	}
 
 	if cfgFileName == "" {

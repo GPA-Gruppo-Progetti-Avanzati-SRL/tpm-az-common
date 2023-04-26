@@ -1,6 +1,6 @@
-db: rtp_bconn_db
+db: leas_cab_db
 lks-file: lks-cfg-sample.yml
-#lks-file: cosmosdb/cmds/cos-cli/lks-sample.yml
+#lks-file: cosmosdb/cmds/cos-cli/lks-cfg-sample.yml
 log-level: 1
 ops:
   # count campaign
