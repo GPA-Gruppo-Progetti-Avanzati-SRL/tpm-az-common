@@ -1,6 +1,7 @@
 package coslks
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -32,7 +33,15 @@ func (c *Config) GetCollectionNameById(aCollectionId string) string {
 		}
 	}
 
-	log.Warn().Str("coll-id", aCollectionId).Msg(semLogContext + " not found")
+	var evt *zerolog.Event
+	if len(c.Collections) > 0 {
+		evt = log.Warn()
+	} else {
+		evt = log.Info()
+	}
+
+	evt.Str("coll-id", aCollectionId).Msg(semLogContext + " not found")
+
 	return ""
 }
 
@@ -43,6 +52,13 @@ func (c *Config) GetDbNameById(id string) string {
 		return c.DB.Name
 	}
 
-	log.Warn().Str("db-id", id).Msg(semLogContext + " not found")
+	var evt *zerolog.Event
+	if c.DB.Id != "" {
+		evt = log.Warn()
+	} else {
+		evt = log.Info()
+	}
+
+	evt.Str("db-id", id).Msg(semLogContext + " not found")
 	return ""
 }

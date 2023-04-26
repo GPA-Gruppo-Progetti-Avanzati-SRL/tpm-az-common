@@ -13,6 +13,8 @@ import (
 func executeSelectAndDeleteCommand(args CmdLineArgs, opNdx int) error {
 	const semLogContext = "cos-cli::select-delete-command"
 
+	log.Info().Str(semLogParams, args.Operations[opNdx].String()).Msg(semLogContext)
+
 	lks, err := coslks.GetLinkedService(args.Broker)
 	if err != nil {
 		return err
@@ -26,7 +28,7 @@ func executeSelectAndDeleteCommand(args CmdLineArgs, opNdx int) error {
 	var ctxDocs []cosquery.Document
 	ctxDocs, err = cosquery.ReadAll(lks, args.Db, args.Operations[opNdx].Container, args.Operations[opNdx].CtxQueryText)
 	if err != nil {
-		log.Error().Err(err).Str(semLogContainer, args.Operations[opNdx].Container).Str(semLogCtxQuery, args.Operations[opNdx].CtxQueryText).Msg(semLogContext)
+		log.Error().Err(err).Msg(semLogContext)
 		return err
 	}
 
@@ -45,7 +47,7 @@ func executeSelectAndDeleteCommand(args CmdLineArgs, opNdx int) error {
 			}
 		} else {
 			err = errors.New("the document returned is not a map")
-			log.Error().Err(err).Str(semLogContainer, args.Operations[opNdx].Container).Str(semLogCtxQuery, args.Operations[opNdx].CtxQueryText).Msg(semLogContext)
+			log.Error().Err(err).Msg(semLogContext)
 			return err
 		}
 	}

@@ -1,0 +1,47 @@
+db: rtp_bconn_db
+lks-file: lks-cfg-sample.yml
+#lks-file: cosmosdb/cmds/cos-cli/lks-sample.yml
+log-level: 1
+ops:
+  - cmd: select
+    query: "select c.id, c.pkey from c where c[\"ctx-id\"] = '${LEAS_CAB_CAMPAIGN}' and is_defined(c.events)"
+    cnt: tokens
+    concurrency-level: 3
+    delete: true
+  - cmd: select
+    query: "select c.id, c.pkey from c where c[\"tok-ctx-id\"] = '${LEAS_CAB_CAMPAIGN}' and is_defined(c[\"actor-id\"])"
+    cnt: bearers
+    concurrency-level: 3
+    delete: true
+  # delete file rows
+  - cmd: select
+    cnt: files
+    query: "select * from c where c.pkey = '${id}'"
+    context-query: "select * from c where c.pkey = 'cos-text-file' and STARTSWITH(c.id, '${LEAS_CAB_CAMPAIGN}')"
+    delete: true
+    concurrency-level: 3
+    page-size: 100
+  # delete files
+  - cmd: select
+    cnt: files
+    query: "select * from c where c.pkey = 'cos-text-file' and STARTSWITH(c.id, '${LEAS_CAB_CAMPAIGN}')"
+    delete: true
+    concurrency-level: 3
+    page-size: 100
+  # delete campaign
+  - cmd: select
+    title: delete campaign
+    cnt: campaign
+    query: "select * from c where c.pkey = 'campaign'"
+    delete: true
+    concurrency-level: 1
+    page-size: 100
+  # delete token context
+  - cmd: select
+    title: delete token-context
+    cnt: tokens
+    query: "select * from c where c.pkey = 'token-context'"
+    delete: true
+    concurrency-level: 1
+    page-size: 100
+

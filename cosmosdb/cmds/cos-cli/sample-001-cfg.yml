@@ -1,0 +1,78 @@
+db: rtp_bconn_db
+lks-file: lks-cfg-sample.yml
+#lks-file: cosmosdb/cmds/cos-cli/lks-sample.yml
+log-level: 1
+ops:
+  # count campaign
+  - cmd: select
+    title: count campaign
+    query: "select count(1) as count from c where c.pkey = 'campaign'"
+    cnt: campaign
+    concurrency-level: 3
+    print: "::{{ .json }}"
+  # list campaign
+  - cmd: select
+    title: list campaign
+    cnt: campaign
+    query: "select * from c where c.pkey = 'campaign'"
+    delete: false
+    concurrency-level: 1
+    page-size: 100
+    limit: 0
+    print: "{{ .pkey }}:{{ .id }}:{{ .json }}"
+  # count token-contexts
+  - cmd: select
+    title: count token-contexts
+    query: "select count(1) as count from c where c.pkey = 'token-context'"
+    cnt: tokens
+    concurrency-level: 3
+    print: "::{{ .json }}"
+  # list token-context
+  - cmd: select
+    title: list token-context
+    cnt: tokens
+    query: "select * from c where c.pkey = 'token-context'"
+    delete: false
+    concurrency-level: 1
+    page-size: 100
+    limit: 0
+    print: "{{ .pkey }}:{{ .id }}:{{ .json }}"
+  # count tokens for ${LEAS_CAB_CAMPAIGN}
+  - cmd: select
+    title: count tokens for ${LEAS_CAB_CAMPAIGN}
+    query: "select count(1) as count from c where c[\"ctx-id\"] = '${LEAS_CAB_CAMPAIGN}' and is_defined(c.events)"
+    cnt: tokens
+    concurrency-level: 3
+    print: "::{{ .json }}"
+  # count bearers for ${LEAS_CAB_CAMPAIGN}
+  - cmd: select
+    title: count bearers for ${LEAS_CAB_CAMPAIGN}
+    query: "select count(1) as count from c where c[\"tok-ctx-id\"] = '${LEAS_CAB_CAMPAIGN}' and is_defined(c[\"actor-id\"])"
+    cnt: bearers
+    concurrency-level: 3
+    print: "::{{ .json }}"
+  # count files for ${LEAS_CAB_CAMPAIGN}
+  - cmd: select
+    title: count files for ${LEAS_CAB_CAMPAIGN}
+    query: "select count(1) as count from c where c.pkey = 'cos-text-file' and STARTSWITH(c.id, '${LEAS_CAB_CAMPAIGN}')"
+    cnt: files
+    concurrency-level: 3
+    print: ":: {{ .json }}"
+  # list files for ${LEAS_CAB_CAMPAIGN}
+  - cmd: select
+    title: list files for ${LEAS_CAB_CAMPAIGN}
+    cnt: files
+    query: "select * from c where c.pkey = 'cos-text-file' and STARTSWITH(c.id, '${LEAS_CAB_CAMPAIGN}')"
+    delete: false
+    concurrency-level: 1
+    page-size: 100
+    limit: 0
+    print: "{{ .pkey }}:{{ .id }}:{{ .json }}"
+  # count rows for file for ${LEAS_CAB_CAMPAIGN}
+  - cmd: select
+    title: count rows for file for ${LEAS_CAB_CAMPAIGN}
+    query: "select count(1) as count from c where c.pkey = '${id}'"
+    context-query: "select * from c where c.pkey = 'cos-text-file' and STARTSWITH(c.id, '${LEAS_CAB_CAMPAIGN}')"
+    cnt: files
+    concurrency-level: 3
+    print: "::{{ .json }}"

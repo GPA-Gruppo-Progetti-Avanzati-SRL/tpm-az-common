@@ -79,8 +79,11 @@ func DocumentMapResponseDecoderFunc(resp *gocosmos.RespQueryDocs) (Response, err
 	if resp != nil {
 		e.RespCount = resp.Count
 		for _, d := range resp.Documents {
-			if m, ok := d.(map[string]interface{}); ok {
-				e.Docs = append(e.Docs, DocumentMap(m))
+			switch typedDoc := d.(type) {
+			case map[string]interface{}:
+				e.Docs = append(e.Docs, DocumentMap(typedDoc))
+			case gocosmos.DocInfo:
+				e.Docs = append(e.Docs, DocumentMap(typedDoc.AsMap()))
 			}
 		}
 	}

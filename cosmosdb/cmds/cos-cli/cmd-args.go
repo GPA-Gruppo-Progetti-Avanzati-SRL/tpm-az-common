@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
+	"strings"
 )
 
 const (
@@ -20,7 +22,7 @@ const (
 	ParamLogLevelDefaultValue = -1
 
 	ParamLksFileName             = "lks-file"
-	ParamLksFileNameDefaultValue = "lks-sample.yml"
+	ParamLksFileNameDefaultValue = "lks-cfg.yml"
 
 	ParamBrokerName             = "cos"
 	ParamBrokerNameDefaultValue = "default"
@@ -58,6 +60,9 @@ const (
 	ParamLimit             = "limit"
 	ParamLimitDefaultValue = 0
 
+	ParamTitle             = "title"
+	ParamTitleDefaultValue = ""
+
 	CmdSelect       = "select"
 	CmdSelectDelete = "select-delete"
 	CmdUpsert       = "upsert"
@@ -90,6 +95,7 @@ var defaultArgs = CmdLineArgs{
 type CmdLineArgOperation struct {
 	Container        string `yaml:"cnt,omitempty" mapstructure:"cnt,omitempty" json:"cnt,omitempty"`
 	Cmd              string `yaml:"cmd,omitempty" mapstructure:"cmd,omitempty" json:"cmd,omitempty"`
+	Title            string `yaml:"title,omitempty" mapstructure:"title,omitempty" json:"title,omitempty"`
 	QueryText        string `yaml:"query,omitempty" mapstructure:"query,omitempty" json:"query,omitempty"`
 	CtxQueryText     string `yaml:"context-query,omitempty" mapstructure:"context-query,omitempty" json:"context-query,omitempty"`
 	PrintTemplate    string `yaml:"print,omitempty" mapstructure:"print,omitempty" json:"print,omitempty"`
@@ -127,17 +133,75 @@ func (args *CmdLineArgs) Log(logContext string) {
 	log.Info().Int("log-level", args.LogLevel).Msg(logContext)
 
 	for i, op := range args.Operations {
-		log.Info().Int("[i]", i).Str("cmd", op.Cmd).Msg(logContext)
-		log.Info().Int("[i]", i).Str("cnt", op.Container).Msg(logContext)
-		log.Info().Int("[i]", i).Int("concurrency-level", op.ConcurrencyLevel).Msg(logContext)
-		log.Info().Int("[i]", i).Str("context-query", op.CtxQueryText).Msg(logContext)
-		log.Info().Int("[i]", i).Bool("delete-flag", op.DeleteFlag).Msg(logContext)
-		log.Info().Int("[i]", i).Int("limit", op.Limit).Msg(logContext)
-		log.Info().Int("[i]", i).Str("out", op.OutFile).Msg(logContext)
-		log.Info().Int("[i]", i).Int("page-size", op.PageSize).Msg(logContext)
-		log.Info().Int("[i]", i).Str("print", op.PrintTemplate).Msg(logContext)
-		log.Info().Int("[i]", i).Str("query", op.QueryText).Msg(logContext)
+
+		evt := log.Info().Int("[i]", i)
+		switch op.Cmd {
+		case CmdSelect:
+			evt.Str(ParamCmd, op.Cmd)
+			evt.Str(ParamCollectionName, op.Container)
+			evt.Str(ParamContextQuery, op.CtxQueryText)
+			evt.Int(ParamLimit, op.Limit)
+			evt.Str(ParamOutFile, op.OutFile)
+			evt.Int(ParamPageSize, op.PageSize)
+			evt.Str(ParamPrintTemplate, op.PrintTemplate)
+			evt.Str(ParamQuery, op.QueryText)
+		case CmdSelectDelete:
+			evt.Str(ParamCmd, op.Cmd)
+			evt.Str(ParamCollectionName, op.Container)
+			evt.Str(ParamContextQuery, op.CtxQueryText)
+			evt.Int(ParamLimit, op.Limit)
+			evt.Int(ParamPageSize, op.PageSize)
+			evt.Str(ParamQuery, op.QueryText)
+			evt.Int(ParamConcurrencyLevel, op.ConcurrencyLevel)
+			evt.Bool(ParamDeleteFlag, op.DeleteFlag)
+		}
+
+		evt.Msg(logContext)
 	}
+}
+
+func (op *CmdLineArgOperation) String() string {
+
+	var sb strings.Builder
+	switch op.Cmd {
+	case CmdSelect:
+		sb.WriteString(fmt.Sprintf("-%s %s ", ParamCmd, op.Cmd))
+		sb.WriteString(op.StringParam(ParamCollectionName, op.Container, ParamCollectionNameDefaultValue))
+		sb.WriteString(op.StringParam(ParamQuery, op.QueryText, ParamQueryDefaultValue))
+		sb.WriteString(op.StringParam(ParamPrintTemplate, op.PrintTemplate, ParamPrintTemplateDefaultValue))
+		sb.WriteString(op.StringParam(ParamContextQuery, op.CtxQueryText, ParamContextQueryDefaultValue))
+		sb.WriteString(op.intParam2String(ParamLimit, op.Limit, ParamLimitDefaultValue))
+		sb.WriteString(op.intParam2String(ParamPageSize, op.PageSize, ParamPageSizeDefaultValue))
+		sb.WriteString(op.StringParam(ParamOutFile, op.OutFile, ParamOutFileDefaultValue))
+	case CmdSelectDelete:
+		sb.WriteString(fmt.Sprintf("-%s %s ", ParamCmd, CmdSelect))
+		sb.WriteString(fmt.Sprintf("-%s", ParamDeleteFlag))
+		sb.WriteString(op.StringParam(ParamCollectionName, op.Container, ParamCollectionNameDefaultValue))
+		sb.WriteString(op.StringParam(ParamQuery, op.QueryText, ParamQueryDefaultValue))
+		sb.WriteString(op.StringParam(ParamContextQuery, op.CtxQueryText, ParamContextQueryDefaultValue))
+		sb.WriteString(op.intParam2String(ParamLimit, op.Limit, ParamLimitDefaultValue))
+		sb.WriteString(op.intParam2String(ParamPageSize, op.PageSize, ParamPageSizeDefaultValue))
+		sb.WriteString(op.intParam2String(ParamConcurrencyLevel, op.ConcurrencyLevel, ParamConcurrencyLevelDefaultValue))
+	}
+
+	return sb.String()
+}
+
+func (op *CmdLineArgOperation) StringParam(name, val, defaultValue string) string {
+	if val != defaultValue {
+		s, _ := json.Marshal(val)
+		return fmt.Sprintf("-%s %s ", name, s)
+	}
+
+	return ""
+}
+
+func (op *CmdLineArgOperation) intParam2String(name string, val, defaultValue int) string {
+	if val != defaultValue {
+		return fmt.Sprintf("-%s %d ", name, val)
+	}
+
+	return ""
 }
 
 func ParseCmdLineArgs() (CmdLineArgs, error) {
@@ -146,21 +210,21 @@ func ParseCmdLineArgs() (CmdLineArgs, error) {
 
 	args := CmdLineArgs{}
 
-	argsFileNamePtr := flag.String(ParamCfgFileName, "", "yaml file of command args")
-	lksFileNamePtr := flag.String(ParamLksFileName, "", "yaml file of cosmos config")
-	deleteFlagPtr := flag.Bool(ParamDeleteFlag, false, "option to delete queried docs")
-	concurrencyLevelPtr := flag.Int(ParamConcurrencyLevel, 0, "level of concurrency in modify ops")
-	logLevelNamePtr := flag.Int(ParamLogLevel, 0, "log level to be used")
-	pageSizePtr := flag.Int(ParamPageSize, 0, "page size used in the paged select ops")
-	limitPtr := flag.Int(ParamLimit, 0, "limit the number of records returned")
-	brokerPtr := flag.String(ParamBrokerName, "", "cosmos instance config name")
-	dbPtr := flag.String(ParamDbName, "", "db name")
-	collectionPtr := flag.String(ParamCollectionName, "", "container name")
-	cmdPtr := flag.String(ParamCmd, "", fmt.Sprintf("cmd: %s, %s, %s", CmdSelect, CmdUpsert, CmdDelete))
-	queryTextPtr := flag.String(ParamQuery, "", "cosmos query statement")
-	ctxQueryTextPtr := flag.String(ParamContextQuery, "", "cosmos context query statement to get values for the actual target query")
-	queryPrintTemplatePtr := flag.String(ParamPrintTemplate, "", "cosmos query statement")
-	outFilePtr := flag.String(ParamOutFile, "", "output-file")
+	argsFileNamePtr := flag.String(ParamCfgFileName, "", fmt.Sprintf("yaml file of command args (default: %s)", ParamCfgFileDefaultValue))
+	lksFileNamePtr := flag.String(ParamLksFileName, "", fmt.Sprintf("yaml file of cosmos config (connection string and optionally db and collection resolution) (default: %s)", ParamLksFileNameDefaultValue))
+	deleteFlagPtr := flag.Bool(ParamDeleteFlag, false, fmt.Sprintf("option to delete queried docs  (default: %t)", false))
+	concurrencyLevelPtr := flag.Int(ParamConcurrencyLevel, 0, fmt.Sprintf("level of concurrency in modify ops  (default: %d)", ParamConcurrencyLevelDefaultValue))
+	logLevelNamePtr := flag.Int(ParamLogLevel, 0, fmt.Sprintf("log level to be used (default: %d)", ParamLogLevelDefaultValue))
+	pageSizePtr := flag.Int(ParamPageSize, 0, fmt.Sprintf("page size used in the paged select ops (default: %d)", ParamPageSizeDefaultValue))
+	limitPtr := flag.Int(ParamLimit, 0, fmt.Sprintf("limit the number of records returned (default: %d)", ParamLimitDefaultValue))
+	brokerPtr := flag.String(ParamBrokerName, "", fmt.Sprintf("cosmos instance config name (default: %s)", ParamBrokerNameDefaultValue))
+	dbPtr := flag.String(ParamDbName, "", fmt.Sprintf("db name or id (resolved by the lks file) (default: %s)", ParamDbNameDefaultValue))
+	collectionPtr := flag.String(ParamCollectionName, "", fmt.Sprintf("container name or id (resolved by the lks file) (default: %s)", ParamCollectionNameDefaultValue))
+	cmdPtr := flag.String(ParamCmd, "", fmt.Sprintf("cmd: %s, %s, %s (default: %s)", CmdSelect, CmdUpsert, CmdDelete, ParamCmdDefaultValue))
+	queryTextPtr := flag.String(ParamQuery, "", fmt.Sprintf("cosmos query statement (default: %s)", ParamQueryDefaultValue))
+	ctxQueryTextPtr := flag.String(ParamContextQuery, "", fmt.Sprintf("cosmos context query statement to get values for the actual target query (default: %s)", ParamContextQueryDefaultValue))
+	queryPrintTemplatePtr := flag.String(ParamPrintTemplate, "", fmt.Sprintf("cosmos print template for queried records (default: %s)", ParamPrintTemplateDefaultValue))
+	outFilePtr := flag.String(ParamOutFile, "", fmt.Sprintf("output-file (default: %s)", ParamOutFileDefaultValue))
 	flag.Parse()
 
 	if *argsFileNamePtr != "" {
@@ -220,6 +284,15 @@ func ParseCmdLineArgs() (CmdLineArgs, error) {
 				return args, err
 			} else {
 				args.LksConfig = cfg
+				cnt := cfg.GetCollectionNameById(op.Container)
+				if cnt != "" {
+					args.Operations[i].Container = cnt
+				}
+
+				db := cfg.GetDbNameById(args.Db)
+				if db != "" {
+					args.Db = db
+				}
 			}
 
 			if op.QueryText == "" {

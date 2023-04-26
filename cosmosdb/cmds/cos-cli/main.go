@@ -11,6 +11,7 @@ const (
 	semLogContainer = "cnt"
 	semLogQuery     = "query"
 	semLogCtxQuery  = "context-query"
+	semLogParams    = "params"
 )
 
 func main() {
