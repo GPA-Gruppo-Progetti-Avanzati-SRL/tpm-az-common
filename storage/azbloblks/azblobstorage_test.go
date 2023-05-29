@@ -55,7 +55,7 @@ func TestListBlobs(t *testing.T) {
 		}
 	}
 
-	taggedBlobs, err := azb.ListBlobByTag(TargetContainer, "TagKey1", "MioValore", 10)
+	taggedBlobs, err := azb.ListBlobByTag(TargetContainer, "status", "done", 10)
 	require.NoError(t, err)
 	t.Log(taggedBlobs)
 }

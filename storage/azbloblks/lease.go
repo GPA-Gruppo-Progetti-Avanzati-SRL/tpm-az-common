@@ -43,7 +43,7 @@ func (az *LinkedService) AcquireLease(cntName string, fn string, duration int, a
 	}
 
 	durationOption := int32(duration)
-	_, err = leaseClient.AcquireLease(context.Background(), &lease.BlobAcquireOptions{Duration: &durationOption})
+	_, err = leaseClient.AcquireLease(context.Background(), durationOption, nil)
 	if err != nil {
 		log.Error().Err(err).Str("lease-id", leaseID).Msg(semLogContext)
 		return nil, azblobutil.MapError2AzBlobError(err)

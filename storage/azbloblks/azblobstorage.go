@@ -277,6 +277,33 @@ func (az *LinkedService) UploadFromFile(ctx context.Context, cntName, blobName s
 	return "", nil
 }
 
+func (az *LinkedService) ListBlobs(cntName string, maxResults int32) ([]BlobInfo, error) {
+
+	containerClient := az.Client.ServiceClient().NewContainerClient(cntName)
+
+	opts := &azblob.ListBlobsFlatOptions{
+		MaxResults: &maxResults,
+	}
+	pager := containerClient.NewListBlobsFlatPager(opts)
+
+	var rl []BlobInfo
+	for pager.More() {
+		resp, err := pager.NextPage(context.TODO())
+		if err != nil {
+			return nil, azblobutil.MapError2AzBlobError(err)
+		}
+		for _, bi := range resp.Segment.BlobItems {
+			blobInfo := BlobInfo{
+				ContainerName: cntName,
+				BlobName:      *bi.Name,
+			}
+			rl = append(rl, blobInfo)
+		}
+	}
+
+	return rl, nil
+}
+
 func (az *LinkedService) ListBlobByTag(cntName string, tagName, tagValue string, maxResults int) ([]BlobInfo, error) {
 
 	svcClient := az.Client.ServiceClient()
@@ -284,8 +311,7 @@ func (az *LinkedService) ListBlobByTag(cntName string, tagName, tagValue string,
 	whereCondition := fmt.Sprintf("\"%s\"='%s'", tagName, tagValue)
 
 	maxResultOption := int32(maxResults)
-	resp, err := svcClient.FilterBlobs(context.Background(), &service.FilterBlobsOptions{
-		Where:      &whereCondition,
+	resp, err := svcClient.FilterBlobs(context.Background(), whereCondition, &service.FilterBlobsOptions{
 		MaxResults: &maxResultOption,
 	})
 
