@@ -20,18 +20,68 @@ const (
 	AZCommonBlobAccountKeyEnvVarName  = "AZCOMMON_BLOB_ACCTKEY"
 )
 
+var blobDataPattern = `This is my blob %d`
+
 func TestListBlobs(t *testing.T) {
+
+	const testListBlobsContainer = "lks-cnt-1"
+	const DropListBlobContainerOnExit = true
+
 	ctx := context.Background()
 
 	stgConfig := azstoragecfg.Config{
-		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
+		Account:    os.Getenv(AZCommonBlobAccountNameEnvVarName),
 		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
 	}
 
-	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
+	require.NotEmpty(t, stgConfig.Account, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
 	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
 
-	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	azb, err := azbloblks.NewLinkedService(stgConfig.Account, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	require.NoError(t, err)
+
+	err = azb.NewContainer(testListBlobsContainer, true)
+	require.NoError(t, err)
+
+	defer func() {
+		if DropListBlobContainerOnExit {
+			err = azb.DeleteContainer(testListBlobsContainer, false)
+			require.NoError(t, err)
+		}
+	}()
+
+	for i := 0; i < 6000; i++ {
+		blobData := fmt.Sprintf(blobDataPattern, i)
+		_, err = azb.UploadFromBuffer(context.Background(), testListBlobsContainer, fmt.Sprintf("blob-%d.txt", i), []byte(blobData))
+		require.NoError(t, err)
+	}
+
+	opts := azblob.ListBlobsFlatOptions{}
+	pager := azb.Client.NewListBlobsFlatPager(testListBlobsContainer, &opts)
+
+	numBlobsRetrieved := 0
+	for pager.More() {
+		resp, err := pager.NextPage(ctx)
+		require.NoError(t, err)
+		for _, v := range resp.Segment.BlobItems {
+			numBlobsRetrieved++
+			t.Logf("[%d-%s] tier: %s, content-type: %s, content-length: %d, name: %s", numBlobsRetrieved, *v.Properties.BlobType, *v.Properties.AccessTier, *v.Properties.ContentType, *v.Properties.ContentLength, *v.Name)
+		}
+	}
+
+}
+
+func TestListBlobsByTag(t *testing.T) {
+
+	stgConfig := azstoragecfg.Config{
+		Account:    os.Getenv(AZCommonBlobAccountNameEnvVarName),
+		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
+	}
+
+	require.NotEmpty(t, stgConfig.Account, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
+	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
+
+	azb, err := azbloblks.NewLinkedService(stgConfig.Account, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
 	require.NoError(t, err)
 
 	err = azb.NewContainer(TargetContainer, true)
@@ -43,17 +93,6 @@ func TestListBlobs(t *testing.T) {
 			require.NoError(t, err)
 		}
 	}()
-
-	opts := azblob.ListBlobsFlatOptions{}
-	pager := azb.Client.NewListBlobsFlatPager(TargetContainer, &opts)
-
-	for pager.More() {
-		resp, err := pager.NextPage(ctx)
-		require.NoError(t, err)
-		for _, v := range resp.Segment.BlobItems {
-			t.Logf("[%s] tier: %s, content-type: %s, content-length: %d, name: %s", *v.Properties.BlobType, *v.Properties.AccessTier, *v.Properties.ContentType, *v.Properties.ContentLength, *v.Name)
-		}
-	}
 
 	taggedBlobs, err := azb.ListBlobByTag(TargetContainer, "status", "done", 10)
 	require.NoError(t, err)
