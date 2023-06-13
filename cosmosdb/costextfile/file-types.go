@@ -13,19 +13,24 @@ const (
 	FileNeverExpireTTL   = -1
 	FileDefaultExpireTTL = 3600 * 24 * 30 // Default value is set to 30 days. It will enforced if the ttl value provided has not been set... 0
 
-	StatusAccepted = "accepted"
-	StatusRefused  = "refused"
-	StatusDone     = "done"
-	StatusUploaded = "uploaded"
-	StatusWorking  = "working"
-	StatusEmpty    = "empty"
-
+	StatusAccepted     = "accepted"
+	StatusRefused      = "refused"
+	StatusDone         = "done"
+	StatusUploaded     = "uploaded"
+	StatusWorking      = "working"
+	StatusEmpty        = "empty"
+	StatusCreated      = "created"
+	StatusProduced     = "produced"
+	StatusFailed       = "failed"
 	StatusAcceptedText = "Accepted"
 	StatusRefusedText  = "Refused"
 	StatusDoneText     = "Done"
 	StatusUploadedText = "Uploaded"
 	StatusWorkingText  = "Working"
 	StatusEmptyText    = "Empty"
+	StatusCreatedText  = "Created"
+	StatusProducedText = "Produced"
+	StatusFailedText   = "Failed"
 )
 
 // Note: omitempty removed because they are counters and the 0 value is a meaningful value.
