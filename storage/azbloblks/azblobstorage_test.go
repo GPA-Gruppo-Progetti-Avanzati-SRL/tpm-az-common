@@ -16,11 +16,56 @@ const (
 	TargetContainer     = "lks-container"
 	DropContainerOnExit = false
 
-	AZCommonBlobAccountNameEnvVarName = "AZCOMMON_BLOB_ACCOUNTNAME"
-	AZCommonBlobAccountKeyEnvVarName  = "AZCOMMON_BLOB_ACCTKEY"
+	AZCommonBlobAccountNameEnvVarName     = "AZCOMMON_BLOB_ACCOUNTNAME"
+	AZCommonBlobAccountKeyEnvVarName      = "AZCOMMON_BLOB_ACCTKEY"
+	AZCommonBlobAccountKeySasTokenVarName = "AZCOMMON_BLOB_SASTOKEN"
+	AZCommonBlobAuthModeVarName           = "AZCOMMON_BLOB_AUTHMODE"
 )
 
 var blobDataPattern = `This is my blob %d`
+
+var blobLks *azbloblks.LinkedService
+
+func TestMain(m *testing.M) {
+	stgConfig := azstoragecfg.Config{
+		Account:    os.Getenv(AZCommonBlobAccountNameEnvVarName),
+		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
+		SasToken:   os.Getenv(AZCommonBlobAccountKeySasTokenVarName),
+		AuthMode:   os.Getenv(AZCommonBlobAuthModeVarName),
+	}
+
+	if stgConfig.Account == "" {
+		panic("blob storage account-name not set.... use env var " + AZCommonBlobAccountNameEnvVarName)
+	}
+
+	var err error
+
+	if stgConfig.AuthMode == "" {
+		stgConfig.AuthMode = azstoragecfg.AuthModeAccountKey
+	}
+
+	switch stgConfig.AuthMode {
+	case azstoragecfg.AuthModeAccountKey:
+		if stgConfig.AccountKey == "" {
+			panic("blob storage account-key not set.... use env var " + AZCommonBlobAccountKeyEnvVarName)
+		}
+		blobLks, err = azbloblks.NewLinkedService(stgConfig.Account, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+
+	case azstoragecfg.AuthModeSasToken:
+		if stgConfig.SasToken == "" {
+			panic("blob storage sas-token not set.... use env var " + AZCommonBlobAccountKeySasTokenVarName)
+		}
+
+		blobLks, err = azbloblks.NewLinkedService(stgConfig.Account, azstoragecfg.WithSasToken(stgConfig.SasToken))
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	exitVal := m.Run()
+	os.Exit(exitVal)
+}
 
 func TestListBlobs(t *testing.T) {
 
@@ -29,35 +74,25 @@ func TestListBlobs(t *testing.T) {
 
 	ctx := context.Background()
 
-	stgConfig := azstoragecfg.Config{
-		Account:    os.Getenv(AZCommonBlobAccountNameEnvVarName),
-		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
-	}
-
-	require.NotEmpty(t, stgConfig.Account, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
-	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
-
-	azb, err := azbloblks.NewLinkedService(stgConfig.Account, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
-	require.NoError(t, err)
-
-	err = azb.NewContainer(testListBlobsContainer, true)
+	var err error
+	err = blobLks.NewContainer(testListBlobsContainer, true)
 	require.NoError(t, err)
 
 	defer func() {
 		if DropListBlobContainerOnExit {
-			err = azb.DeleteContainer(testListBlobsContainer, false)
+			err = blobLks.DeleteContainer(testListBlobsContainer, false)
 			require.NoError(t, err)
 		}
 	}()
 
 	for i := 0; i < 6000; i++ {
 		blobData := fmt.Sprintf(blobDataPattern, i)
-		_, err = azb.UploadFromBuffer(context.Background(), testListBlobsContainer, fmt.Sprintf("blob-%d.txt", i), []byte(blobData))
+		_, err = blobLks.UploadFromBuffer(context.Background(), testListBlobsContainer, fmt.Sprintf("blob-%d.txt", i), []byte(blobData))
 		require.NoError(t, err)
 	}
 
 	opts := azblob.ListBlobsFlatOptions{}
-	pager := azb.Client.NewListBlobsFlatPager(testListBlobsContainer, &opts)
+	pager := blobLks.Client.NewListBlobsFlatPager(testListBlobsContainer, &opts)
 
 	numBlobsRetrieved := 0
 	for pager.More() {
@@ -73,28 +108,18 @@ func TestListBlobs(t *testing.T) {
 
 func TestListBlobsByTag(t *testing.T) {
 
-	stgConfig := azstoragecfg.Config{
-		Account:    os.Getenv(AZCommonBlobAccountNameEnvVarName),
-		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
-	}
-
-	require.NotEmpty(t, stgConfig.Account, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
-	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
-
-	azb, err := azbloblks.NewLinkedService(stgConfig.Account, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
-	require.NoError(t, err)
-
-	err = azb.NewContainer(TargetContainer, true)
+	var err error
+	err = blobLks.NewContainer(TargetContainer, true)
 	require.NoError(t, err)
 
 	defer func() {
 		if DropContainerOnExit {
-			err = azb.DeleteContainer(TargetContainer, false)
+			err = blobLks.DeleteContainer(TargetContainer, false)
 			require.NoError(t, err)
 		}
 	}()
 
-	taggedBlobs, err := azb.ListBlobByTag(TargetContainer, "status", "done", 10)
+	taggedBlobs, err := blobLks.ListBlobByTag(TargetContainer, "status", "done", 10)
 	require.NoError(t, err)
 	t.Log(taggedBlobs)
 }
@@ -102,85 +127,58 @@ func TestListBlobsByTag(t *testing.T) {
 func TestUploadBlob(t *testing.T) {
 	ctx := context.Background()
 
-	stgConfig := azstoragecfg.Config{
-		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
-		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
-	}
-
-	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
-	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
-
-	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
-	require.NoError(t, err)
+	var err error
 
 	defer func() {
 		if DropContainerOnExit {
-			err = azb.DeleteContainer(TargetContainer, false)
+			err = blobLks.DeleteContainer(TargetContainer, false)
 			require.NoError(t, err)
 		}
 	}()
 
-	url, err := azb.UploadFromBuffer(ctx, TargetContainer, "test-blob-upload-2.txt", []byte(`Text data3`))
+	url, err := blobLks.UploadFromBuffer(ctx, TargetContainer, "test-blob-upload-2.txt", []byte(`Text data3`))
 	require.NoError(t, err)
 
 	t.Log(url)
 }
 
 func TestDownloadBlob(t *testing.T) {
-	stgConfig := azstoragecfg.Config{
-		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
-		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
-	}
+	var err error
 
-	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
-	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
-
-	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
+	_, err = blobLks.DownloadToBuffer(TargetContainer, "cortina-2021")
 	require.NoError(t, err)
 
-	_, err = azb.DownloadToBuffer(TargetContainer, "cortina-2021")
-	require.NoError(t, err)
-
-	blobExists, err := azb.BlobExists(TargetContainer, "cortina-2021")
+	blobExists, err := blobLks.BlobExists(TargetContainer, "cortina-2021")
 	require.NoError(t, err)
 	t.Log("blob exists? ", blobExists)
 }
 
 func TestAcquireBlob(t *testing.T) {
-	stgConfig := azstoragecfg.Config{
-		Name:       os.Getenv(AZCommonBlobAccountNameEnvVarName),
-		AccountKey: os.Getenv(AZCommonBlobAccountKeyEnvVarName),
-	}
 
-	require.NotEmpty(t, stgConfig.Name, "blob storage account-name not set.... use env var "+AZCommonBlobAccountNameEnvVarName)
-	require.NotEmpty(t, stgConfig.AccountKey, "blob storage account-key not set.... use env var "+AZCommonBlobAccountKeyEnvVarName)
-
-	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithAccountKey(stgConfig.AccountKey))
-	require.NoError(t, err)
-
+	var err error
 	blobName := "cortina-2021"
-	blobInfo, err := azb.GetBlobInfo(TargetContainer, blobName)
+	blobInfo, err := blobLks.GetBlobInfo(TargetContainer, blobName)
 	require.NoError(t, err)
 	t.Log(blobInfo)
 
-	leaseHandler, err := azb.AcquireLease(TargetContainer, blobName, 60, true)
+	leaseHandler, err := blobLks.AcquireLease(TargetContainer, blobName, 60, true)
 	require.NoError(t, err)
 
 	defer leaseHandler.Release()
 
 	for i := 0; i <= 20; i++ {
-		blobInfo, err = azb.GetBlobInfo(TargetContainer, blobName)
+		blobInfo, err = blobLks.GetBlobInfo(TargetContainer, blobName)
 		require.NoError(t, err)
 		t.Log(blobInfo)
 		t.Logf("[%d] sleeping....", i)
 		time.Sleep(20 * time.Second)
 
 		bi := azbloblks.BlobInfo{ContainerName: TargetContainer, BlobName: blobName, Tags: []azbloblks.BlobTag{{Key: "TAGleased", Value: fmt.Sprintf("tag-val-%d", i)}}}
-		err = azb.SetBlobTags(bi, leaseHandler.LeaseId)
+		err = blobLks.SetBlobTags(bi, leaseHandler.LeaseId)
 		require.NoError(t, err)
 
 		if i == 6 {
-			_, err := azb.AcquireLease(TargetContainer, blobName, 30, false)
+			_, err := blobLks.AcquireLease(TargetContainer, blobName, 30, false)
 			if err != nil {
 				t.Log(err.Error())
 			}
@@ -190,7 +188,7 @@ func TestAcquireBlob(t *testing.T) {
 
 	t.Logf("[EOL] sleeping....")
 	time.Sleep(60 * time.Second)
-	blobInfo, err = azb.GetBlobInfo(TargetContainer, blobName)
+	blobInfo, err = blobLks.GetBlobInfo(TargetContainer, blobName)
 	require.NoError(t, err)
 	t.Log(blobInfo)
 }
@@ -220,39 +218,4 @@ func TestDownloadPreSigned(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Log(info)
-}
-
-// These functions have not been tested....
-
-func TestBlobListBlobsWithSAS(t *testing.T) {
-	ctx := context.Background()
-
-	stgConfig := azstoragecfg.Config{
-		Name:       "",
-		AccountKey: "",
-	}
-
-	azb, err := azbloblks.NewLinkedService(stgConfig.Name, azstoragecfg.WithSasToken("sv=2020-08-04&ss=bfqt&srt=co&sp=rwdlacupitfx&se=2021-12-31T21:26:45Z&st=2021-12-10T13:26:45Z&spr=https&sig=EG%2BJ5X4e0pzO5PUyQZsxzah8m1W6tX24hdxlr1KQj6M%3D"))
-	require.NoError(t, err)
-
-	err = azb.NewContainer(TargetContainer, true)
-	require.NoError(t, err)
-
-	defer func() {
-		if DropContainerOnExit {
-			err = azb.DeleteContainer(TargetContainer, false)
-			require.NoError(t, err)
-		}
-	}()
-
-	opts := azblob.ListBlobsFlatOptions{}
-	pager := azb.Client.NewListBlobsFlatPager(TargetContainer, &opts)
-
-	for pager.More() {
-		resp, err := pager.NextPage(ctx)
-		require.NoError(t, err)
-		for _, _blob := range resp.Segment.BlobItems {
-			fmt.Printf("%v", _blob.Name)
-		}
-	}
 }

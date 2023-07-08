@@ -10,6 +10,7 @@ import (
 )
 
 type CrawledBlob struct {
+	StorageName   string                  `mapstructure:"storage-name,omitempty" yaml:"storage-name,omitempty" json:"storage-name,omitempty"`
 	BlobId        string                  `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
 	NameGroups    []string                `mapstructure:"name-groups,omitempty" yaml:"name-groups,omitempty" json:"name-groups,omitempty"`
 	PathId        string                  `mapstructure:"path-id,omitempty" yaml:"path-id,omitempty" json:"path-id,omitempty"`
@@ -173,7 +174,7 @@ func (c *Crawler) next() (CrawledBlob, error) {
 
 	if crawledBlob.ListenerIndex >= 0 {
 		lks, _ := azbloblks.GetLinkedService(c.cfg.StorageName)
-		b2, err := lks.DownloadToFile(crawledBlob.BlobInfo.ContainerName, crawledBlob.BlobInfo.BlobName, filepath.Join(c.cfg.DownloadPath, crawledBlob.BlobInfo.BlobName))
+		b2, err := lks.DownloadToFile(crawledBlob.BlobInfo.ContainerName, crawledBlob.BlobInfo.BlobName, filepath.Join(c.cfg.DownloadPath, filepath.Base(crawledBlob.BlobInfo.BlobName)))
 		if err != nil {
 			return CrawledBlobZero, err
 		}
@@ -248,7 +249,7 @@ func (c *Crawler) nextByTag() (CrawledBlob, error) {
 				continue
 			}
 
-			crawledBlob := CrawledBlob{BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1, NameGroups: blobNameParts, ListenerIndex: -1}
+			crawledBlob := CrawledBlob{StorageName: c.cfg.StorageName, BlobId: b1.Id(), PathId: p.Id, BlobInfo: b1, NameGroups: blobNameParts, ListenerIndex: -1}
 
 			for i := range c.listeners {
 				crawledBlob.ThinkTime, ok = c.listeners[i].Accept(crawledBlob)

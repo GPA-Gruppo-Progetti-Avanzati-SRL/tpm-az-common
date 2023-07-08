@@ -36,10 +36,10 @@ var (
 		},
 		Paths: []azblobcrawler.Path{
 			{
-				Id:          "upload-pattern",
+				Id:          "cvm2leas-pattern",
 				Container:   TargetContainer,
-				NamePattern: "test-blob-upload(-1)?\\.txt",
-				Regexp:      regexp.MustCompile("(test-blob)-upload(-1)?\\.txt"),
+				NamePattern: "^(?:[A-Za-z0-9]*/)?([A-Za-z0-9]{1,6})_([0-9]{4}\\-[0-9]{2}\\-[0-9]{2}_[0-9]{2}\\.[0-9]{2}\\.[0-9]{2})_(CVM2LEAS).csv$",
+				Regexp:      regexp.MustCompile("^(?:[A-Za-z0-9]*/)?([A-Za-z0-9]{1,6})_([0-9]{4}\\-[0-9]{2}\\-[0-9]{2}_[0-9]{2}\\.[0-9]{2}\\.[0-9]{2})_(CVM2LEAS).csv$"),
 			},
 		},
 		TickInterval: time.Second * 5,

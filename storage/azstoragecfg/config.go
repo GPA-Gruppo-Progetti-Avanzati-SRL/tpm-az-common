@@ -7,7 +7,8 @@ const (
 )
 
 type Config struct {
-	Name     string `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
+	Name string `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
+
 	Account  string `mapstructure:"account,omitempty" yaml:"account,omitempty" json:"account,omitempty"`
 	AuthMode string `mapstructure:"auth-mode,omitempty"  yaml:"auth-mode,omitempty" json:"auth-mode,omitempty"`
 
