@@ -142,7 +142,7 @@ func (az *LinkedService) GetBlobInfo(cntName string, fn string) (BlobInfo, error
 	}
 
 	bi := BlobInfo{Exists: true, ContainerName: cntName, BlobName: fn, ContentType: *resp.ContentType, Size: *resp.ContentLength, ETag: string(*resp.ETag), LeaseState: string(*resp.LeaseState)}
-	if *resp.TagCount > 0 {
+	if resp.TagCount != nil && *resp.TagCount > 0 {
 		tagResp, err := blobClient.GetTags(context.Background(), &blob.GetTagsOptions{})
 		if err != nil {
 			return bi, azblobutil.MapError2AzBlobError(err)
