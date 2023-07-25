@@ -40,8 +40,20 @@ func Initialize(cfgs []azstoragecfg.Config) (LinkedServices, error) {
 	return r, nil
 }
 
-func GetLinkedService(stgName string) (*LinkedService, error) {
+func LookupNameByAccountName(n string) (string, error) {
+	const semLogContext = "azb-registry::get-account-name-by-name"
+	for _, stg := range theRegistry {
+		if stg.AccountName == n {
+			return stg.Name, nil
+		}
+	}
 
+	err := errors.New("storage-account linked service not found by account-name " + n)
+	log.Error().Err(err).Str("account-name", n).Msg(semLogContext)
+	return "", err
+}
+
+func GetLinkedService(stgName string) (*LinkedService, error) {
 	const semLogContext = "azb-registry::get-lks"
 	for _, stg := range theRegistry {
 		if stg.Name == stgName {
@@ -51,5 +63,18 @@ func GetLinkedService(stgName string) (*LinkedService, error) {
 
 	err := errors.New("storage-account linked service not found by name " + stgName)
 	log.Error().Err(err).Str("stg-name", stgName).Msg(semLogContext)
+	return nil, err
+}
+
+func GetLinkedServiceByAccountName(accountName string) (*LinkedService, error) {
+	const semLogContext = "azb-registry::get-lks-by-acct-name"
+	for _, stg := range theRegistry {
+		if stg.AccountName == accountName {
+			return stg, nil
+		}
+	}
+
+	err := errors.New("storage-account linked service not found by name " + accountName)
+	log.Error().Err(err).Str("stg-name", accountName).Msg(semLogContext)
 	return nil, err
 }

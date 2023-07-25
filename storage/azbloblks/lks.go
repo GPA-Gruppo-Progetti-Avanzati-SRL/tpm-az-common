@@ -8,8 +8,9 @@ import (
 )
 
 type LinkedService struct {
-	Name   string
-	Client *azblob.Client
+	Name        string
+	AccountName string
+	Client      *azblob.Client
 }
 
 const (
@@ -41,13 +42,17 @@ func NewLinkedServiceWithConfig(cfg azstoragecfg.Config) (*LinkedService, error)
 		}
 
 	case azstoragecfg.AuthModeConnectionString:
-		return nil, errors.New("connection string not yet supported")
+		// The azure portal doesn't provide the connection string as the matter of fact....
+		serviceClient, err = azblob.NewClientFromConnectionString(cfg.ConnectionString, nil)
+		if err != nil {
+			return nil, err
+		}
 
 	default:
 		return nil, errors.New("please specify a suitable authentication mode")
 	}
 
-	lks := &LinkedService{Name: cfg.Name, Client: serviceClient}
+	lks := &LinkedService{Name: cfg.Name, AccountName: cfg.Account, Client: serviceClient}
 	return lks, nil
 }
 

@@ -36,6 +36,7 @@ const (
 
 type BlobInfo struct {
 	Exists        bool      `mapstructure:"exists,omitempty" yaml:"exists,omitempty" json:"exists,omitempty"`
+	AccountName   string    `mapstructure:"account-name,omitempty" yaml:"account-name,omitempty" json:"account-name,omitempty"`
 	ContainerName string    `mapstructure:"container-name,omitempty" yaml:"container-name,omitempty" json:"container-name,omitempty"`
 	BlobName      string    `mapstructure:"blob-name,omitempty" yaml:"blob-name,omitempty" json:"blob-name,omitempty"`
 	FileName      string    `mapstructure:"file-name,omitempty" yaml:"file-name,omitempty" json:"file-name,omitempty"`
