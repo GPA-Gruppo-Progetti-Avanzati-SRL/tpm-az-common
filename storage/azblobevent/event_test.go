@@ -15,7 +15,7 @@ var evts = []byte(`
 [
   {
     "topic": "/subscriptions/80d4f652-4caf-4ba5-8a61-900659986846/resourceGroups/GECT/providers/Microsoft.Storage/storageAccounts/gecttest",
-    "subject": "/blobServices/default/containers/test-leas-events/blobs/test.txt",
+    "subject": "/blobServices/default/containers/cvm2leas/blobs/BPACC3_2023-07-07_09.55.15_CVM2LEAS.csv",
     "eventType": "Microsoft.Storage.BlobCreated",
     "id": "2cb94a7d-f01e-0017-5521-baabe1063553",
     "data": {
@@ -26,7 +26,7 @@ var evts = []byte(`
       "contentType": "text/plain",
       "contentLength": 10,
       "blobType": "BlockBlob",
-      "url": "https://gecttest.blob.core.windows.net/test-leas-events/test.txt",
+      "url": "https://gecttest.blob.core.windows.net/cvm2leas/BPACC3_2023-07-07_09.55.15_CVM2LEAS.csv",
       "sequencer": "000000000000000000000000000044FB00000000002a37b7",
       "storageDiagnostics": {
         "batchId": "5a5f87ad-6006-0058-0021-badab5000000"

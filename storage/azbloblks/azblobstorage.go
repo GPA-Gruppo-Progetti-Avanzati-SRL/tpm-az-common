@@ -342,7 +342,8 @@ func (az *LinkedService) ListBlobByTag(cntName string, tagName, tagValue string,
 func (az *LinkedService) SetTags(container, blobNae string, tags []BlobTag, leaseId string) error {
 	blobClient := az.Client.ServiceClient().NewContainerClient(container).NewBlobClient(blobNae)
 
-	var newTags map[string]string
+	// new tags cannot be nil but is acceptable to be empty
+	newTags := make(map[string]string)
 	for _, bi := range tags {
 		if newTags == nil {
 			newTags = make(map[string]string)
