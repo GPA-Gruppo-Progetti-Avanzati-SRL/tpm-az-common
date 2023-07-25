@@ -249,6 +249,10 @@ func (c *Crawler) next() (CrawledEvent, error) {
 
 		if crawledEvt.ListenerIndex < 0 {
 			log.Info().Msg(semLogContext + " blob not accepted by any listener")
+			d.Status = "skipped"
+			if _, err = d.Replace(context.Background(), cnt); err != nil {
+				log.Warn().Err(err).Msg(semLogContext)
+			}
 			continue
 		}
 
