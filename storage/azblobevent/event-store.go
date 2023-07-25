@@ -94,6 +94,20 @@ func ReplaceEventDocument(ctx context.Context, client *azcosmos.ContainerClient,
 	return StoredEventDocument{EventDocument: tok, ETag: resp.ETag}, nil
 }
 
+func UpsertEventDocument(ctx context.Context, client *azcosmos.ContainerClient, tok *EventDocument) (StoredEventDocument, error) {
+	b, err := tok.ToJSON()
+	if err != nil {
+		return StoredEventDocument{}, err
+	}
+
+	resp, err := client.UpsertItem(ctx, azcosmos.NewPartitionKeyString(tok.PKey), b, nil)
+	if err != nil {
+		return StoredEventDocument{}, cosutil.MapAzCoreError(err)
+	}
+
+	return StoredEventDocument{EventDocument: tok, ETag: resp.ETag}, nil
+}
+
 func UpdateEventDocumentStatus(ctx context.Context, client *azcosmos.ContainerClient, pkey, id, status string) error {
 	patch := azcosmos.PatchOperations{}
 	patch.AppendSet("/status", status)
