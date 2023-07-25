@@ -24,10 +24,11 @@ const (
 
 var (
 	crawlerCfg = azblobevent.Config{
-		CosName:      "default",
-		TickInterval: time.Second * 5,
-		ExitOnNop:    true,
-		ExitOnErr:    true,
+		CosName:           "default",
+		ProcessedEventTtl: 60,
+		TickInterval:      time.Second * 5,
+		ExitOnNop:         true,
+		ExitOnErr:         true,
 	}
 )
 
@@ -76,7 +77,7 @@ func (l *testListener) Process(ce azblobevent.CrawledEvent) error {
 		return err
 	}
 
-	err = azblobevent.UpdateEventDocumentStatus(context.Background(), cnt, ce.PKey, ce.Id, "done")
+	err = azblobevent.UpdateEventDocumentStatus(context.Background(), cnt, ce.PKey, ce.Id, "done", ce.ProcessedEventTtl)
 	if err != nil {
 		return err
 	}

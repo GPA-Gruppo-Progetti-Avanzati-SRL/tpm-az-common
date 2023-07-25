@@ -12,11 +12,11 @@ import (
 
 type CrawledEvent struct {
 	EventDocument
-	CosName string `mapstructure:"cos-name,omitempty" yaml:"cos-name,omitempty" json:"cos-name,omitempty"`
-	// CollectionId  string                 `mapstructure:"collection-id,omitempty" yaml:"collection-id,omitempty" json:"collection-id,omitempty"`
-	ThinkTime     time.Duration          `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
-	LeaseHandler  *coslease.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
-	ListenerIndex int                    `mapstructure:"-" yaml:"-" json:"-"`
+	CosName           string                 `mapstructure:"cos-name,omitempty" yaml:"cos-name,omitempty" json:"cos-name,omitempty"`
+	ProcessedEventTtl int                    `mapstructure:"processed-event-ttl,omitempty" yaml:"processed-event-ttl,omitempty" json:"processed-event-ttl,omitempty"`
+	ThinkTime         time.Duration          `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
+	LeaseHandler      *coslease.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
+	ListenerIndex     int                    `mapstructure:"-" yaml:"-" json:"-"`
 }
 
 type Crawler struct {
@@ -223,11 +223,17 @@ func (c *Crawler) next() (CrawledEvent, error) {
 			continue
 		}
 
+		ttl := -1
+		if c.cfg.ProcessedEventTtl > 0 {
+			ttl = c.cfg.ProcessedEventTtl
+		}
+
 		crawledEvt := CrawledEvent{
-			EventDocument: *d.EventDocument,
-			CosName:       c.cfg.CosName,
-			ThinkTime:     0,
-			ListenerIndex: -1,
+			EventDocument:     *d.EventDocument,
+			CosName:           c.cfg.CosName,
+			ThinkTime:         0,
+			ListenerIndex:     -1,
+			ProcessedEventTtl: ttl,
 		}
 
 		for i := range c.listeners {

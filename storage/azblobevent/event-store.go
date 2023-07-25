@@ -108,9 +108,10 @@ func UpsertEventDocument(ctx context.Context, client *azcosmos.ContainerClient, 
 	return StoredEventDocument{EventDocument: tok, ETag: resp.ETag}, nil
 }
 
-func UpdateEventDocumentStatus(ctx context.Context, client *azcosmos.ContainerClient, pkey, id, status string) error {
+func UpdateEventDocumentStatus(ctx context.Context, client *azcosmos.ContainerClient, pkey, id, status string, ttl int) error {
 	patch := azcosmos.PatchOperations{}
 	patch.AppendSet("/status", status)
+	patch.AppendSet("/ttl", ttl)
 	// patch.SetCondition("from c where c.id='TOK'")
 	itemOptions := azcosmos.ItemOptions{ /* EnableContentResponseOnWrite: true */ }
 	_, err := client.PatchItem(ctx, azcosmos.NewPartitionKeyString(pkey), id, patch, &itemOptions)
