@@ -112,7 +112,7 @@ func TestBlobEvent(t *testing.T) {
 			Id:            evt.Id,
 			PKey:          azblobevent.CosPartitionKey,
 			Typ:           evt.Typ,
-			Status:        "todo",
+			Status:        azblobevent.EventDocumentStatusToDo,
 			AccountName:   b.AccountName,
 			ContainerName: b.ContainerName,
 			BlobName:      b.BlobName,

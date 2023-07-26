@@ -24,11 +24,10 @@ const (
 
 var (
 	crawlerCfg = azblobevent.Config{
-		CosName:           "default",
-		ProcessedEventTtl: 60,
-		TickInterval:      time.Second * 5,
-		ExitOnNop:         true,
-		ExitOnErr:         true,
+		CosName:      "default",
+		TickInterval: time.Second * 5,
+		ExitOnNop:    true,
+		ExitOnErr:    true,
 	}
 )
 

@@ -14,6 +14,7 @@ type CrawledEvent struct {
 	EventDocument
 	CosName           string                 `mapstructure:"cos-name,omitempty" yaml:"cos-name,omitempty" json:"cos-name,omitempty"`
 	ProcessedEventTtl int                    `mapstructure:"processed-event-ttl,omitempty" yaml:"processed-event-ttl,omitempty" json:"processed-event-ttl,omitempty"`
+	ErrorEventTtl     int                    `mapstructure:"error-event-ttl,omitempty" yaml:"error-event-ttl,omitempty" json:"error-event-ttl,omitempty"`
 	ThinkTime         time.Duration          `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
 	LeaseHandler      *coslease.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
 	ListenerIndex     int                    `mapstructure:"-" yaml:"-" json:"-"`
@@ -205,7 +206,8 @@ func (c *Crawler) next() (CrawledEvent, error) {
 
 	for _, d := range docs {
 		if d.Typ != BlobCreated {
-			d.Status = "discarded"
+			d.Status = EventDocumentStatusDiscarded
+			d.TTL = AdaptTtl(c.cfg.DiscardedEventTtl)
 			if _, err = d.Replace(context.Background(), cnt); err != nil {
 				log.Warn().Err(err).Msg(semLogContext)
 			}
@@ -223,17 +225,12 @@ func (c *Crawler) next() (CrawledEvent, error) {
 			continue
 		}
 
-		ttl := -1
-		if c.cfg.ProcessedEventTtl > 0 {
-			ttl = c.cfg.ProcessedEventTtl
-		}
-
 		crawledEvt := CrawledEvent{
 			EventDocument:     *d.EventDocument,
 			CosName:           c.cfg.CosName,
 			ThinkTime:         0,
 			ListenerIndex:     -1,
-			ProcessedEventTtl: ttl,
+			ProcessedEventTtl: -1,
 		}
 
 		for i := range c.listeners {
@@ -249,7 +246,8 @@ func (c *Crawler) next() (CrawledEvent, error) {
 
 		if crawledEvt.ListenerIndex < 0 {
 			log.Info().Msg(semLogContext + " blob not accepted by any listener")
-			d.Status = "skipped"
+			d.Status = EventDocumentStatusSkipped
+			d.TTL = AdaptTtl(c.cfg.SkippedEventTtl)
 			if _, err = d.Replace(context.Background(), cnt); err != nil {
 				log.Warn().Err(err).Msg(semLogContext)
 			}

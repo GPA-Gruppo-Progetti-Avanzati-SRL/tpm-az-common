@@ -3,9 +3,18 @@ package azblobevent
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosutil"
+)
+
+const (
+	EventDocumentStatusToDo      = "todo"
+	EventDocumentStatusDiscarded = "discarded"
+	EventDocumentStatusSkipped   = "skipped"
+	EventDocumentStatusError     = "error"
+	EventDocumentStatusDone      = "done"
 )
 
 type EventDocument struct {
@@ -179,7 +188,7 @@ func FindEventDocuments(client *azcosmos.ContainerClient) ([]StoredEventDocument
 
 	var result []StoredEventDocument
 	qo := azcosmos.QueryOptions{PageSizeHint: 10}
-	queryPager := client.NewQueryItemsPager("select * from c where c.status = 'todo'", pk, &qo)
+	queryPager := client.NewQueryItemsPager(fmt.Sprintf("select * from c where c.status = '%s'", EventDocumentStatusToDo), pk, &qo)
 	for queryPager.More() {
 		queryResponse, err := queryPager.NextPage(context.Background())
 		if err != nil {
