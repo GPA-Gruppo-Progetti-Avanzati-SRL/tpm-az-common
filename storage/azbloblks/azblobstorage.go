@@ -247,7 +247,7 @@ func (az *LinkedService) UploadFromBuffer(ctx context.Context, container, fn str
 	return "", nil
 }
 
-func (az *LinkedService) UploadFromFile(ctx context.Context, cntName, blobName string, sourceFileName string) (string, error) {
+func (az *LinkedService) UploadFromFile(ctx context.Context, cntName, blobName string, sourceFileName string, removeFile bool) (string, error) {
 
 	const semLogContext = "azb-lks::upload-file"
 
@@ -262,12 +262,14 @@ func (az *LinkedService) UploadFromFile(ctx context.Context, cntName, blobName s
 		}
 	}(destFile)
 
-	defer func(name string) {
-		err = os.Remove(name)
-		if err != nil {
-			log.Error().Err(err).Msg(semLogContext + " error in deleting uploaded file")
-		}
-	}(sourceFileName)
+	if removeFile {
+		defer func(name string) {
+			err = os.Remove(name)
+			if err != nil {
+				log.Error().Err(err).Msg(semLogContext + " error in deleting uploaded file")
+			}
+		}(sourceFileName)
+	}
 
 	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlockBlobClient(blobName)
 
