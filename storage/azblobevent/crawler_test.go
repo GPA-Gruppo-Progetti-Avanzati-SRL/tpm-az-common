@@ -76,7 +76,7 @@ func (l *testListener) Process(ce azblobevent.CrawledEvent) error {
 		return err
 	}
 
-	err = azblobevent.UpdateEventDocumentStatus(context.Background(), cnt, ce.PKey, ce.Id, "done", ce.ProcessedEventTtl)
+	err = azblobevent.UpdateEventDocumentStatus(context.Background(), cnt, ce.PKey, ce.Id, "done", 120)
 	if err != nil {
 		return err
 	}

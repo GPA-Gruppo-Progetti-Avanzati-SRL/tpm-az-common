@@ -12,12 +12,12 @@ import (
 
 type CrawledEvent struct {
 	EventDocument
-	CosName           string                 `mapstructure:"cos-name,omitempty" yaml:"cos-name,omitempty" json:"cos-name,omitempty"`
-	ProcessedEventTtl int                    `mapstructure:"processed-event-ttl,omitempty" yaml:"processed-event-ttl,omitempty" json:"processed-event-ttl,omitempty"`
-	ErrorEventTtl     int                    `mapstructure:"error-event-ttl,omitempty" yaml:"error-event-ttl,omitempty" json:"error-event-ttl,omitempty"`
-	ThinkTime         time.Duration          `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
-	LeaseHandler      *coslease.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
-	ListenerIndex     int                    `mapstructure:"-" yaml:"-" json:"-"`
+	CosName string `mapstructure:"cos-name,omitempty" yaml:"cos-name,omitempty" json:"cos-name,omitempty"`
+	// ProcessedEventTtl int                    `mapstructure:"processed-event-ttl,omitempty" yaml:"processed-event-ttl,omitempty" json:"processed-event-ttl,omitempty"`
+	// ErrorEventTtl     int                    `mapstructure:"error-event-ttl,omitempty" yaml:"error-event-ttl,omitempty" json:"error-event-ttl,omitempty"`
+	ThinkTime     time.Duration          `mapstructure:"think-time,omitempty" yaml:"think-time,omitempty" json:"think-time,omitempty"`
+	LeaseHandler  *coslease.LeaseHandler `mapstructure:"-" yaml:"-" json:"-"`
+	ListenerIndex int                    `mapstructure:"-" yaml:"-" json:"-"`
 }
 
 type Crawler struct {
@@ -226,11 +226,10 @@ func (c *Crawler) next() (CrawledEvent, error) {
 		}
 
 		crawledEvt := CrawledEvent{
-			EventDocument:     *d.EventDocument,
-			CosName:           c.cfg.CosName,
-			ThinkTime:         0,
-			ListenerIndex:     -1,
-			ProcessedEventTtl: -1,
+			EventDocument: *d.EventDocument,
+			CosName:       c.cfg.CosName,
+			ThinkTime:     0,
+			ListenerIndex: -1,
 		}
 
 		for i := range c.listeners {
