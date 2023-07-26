@@ -110,6 +110,16 @@ func (az *LinkedService) BlobExists(cntName string, fn string) (bool, error) {
 	return ok, err
 }
 
+func (az *LinkedService) DeleteBlob(cntName string, fn string) error {
+	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(fn)
+	_, err := blobClient.Delete(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (az *LinkedService) GetBlobProperties(cntName string, fn string) (blob.GetPropertiesResponse, bool, error) {
 	blobClient := az.Client.ServiceClient().NewContainerClient(cntName).NewBlobClient(fn)
 
