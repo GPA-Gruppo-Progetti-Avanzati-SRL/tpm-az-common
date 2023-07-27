@@ -15,7 +15,7 @@ const (
 )
 
 var LeasedObjectIdRegexpPattern = regexp.MustCompile("^([a-zA-Z0-9-_]*):([a-zA-Z0-9-_]*):([a-zA-Z0-9-_]*)$")
-var leasedObjectNamePattern = "%s:%s:%s"
+var leasedObjectNamePattern = "evt-lease:%s:%s"
 var LeaseIdRegexpPattern = regexp.MustCompile("^([a-zA-Z0-9-_]*):([a-zA-Z0-9-_]*):([a-zA-Z0-9-_]*):([a-zA-Z0-9-_]*)$")
 
 var ZeroLease = Lease{}
@@ -60,7 +60,7 @@ func (l *Lease) PartitionKeyObjectId() (string, string, string, error) {
 }
 
 func LeasedObjectId(leaseType string, obkPkey, objId string) string {
-	return fmt.Sprintf(leasedObjectNamePattern, leaseType, obkPkey, objId)
+	return fmt.Sprintf(leasedObjectNamePattern, obkPkey, objId)
 }
 
 func PartitionKeyObjectIdFromLeaseId(lid string) (string, string, string, error) {

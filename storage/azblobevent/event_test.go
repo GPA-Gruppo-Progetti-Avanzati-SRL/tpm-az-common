@@ -141,5 +141,17 @@ func TestBlobEvent(t *testing.T) {
 		for _, e := range evts {
 			t.Log(e.EventDocument)
 		}
+
+		evtAnno := azblobevent.EventDocumentAnnotation{
+			Typ: "info",
+			Note: azblobevent.EventDocumentAnnotationNote{
+				Typ:     "note",
+				Code:    "",
+				Message: "hello world note",
+			},
+			TTL: 60,
+		}
+		_, err = azblobevent.InsertEventDocumentAnnotation(context.Background(), cli, azblobevent.CosPartitionKey, evt.Id, &evtAnno)
+		require.NoError(t, err)
 	}
 }
