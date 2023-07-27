@@ -18,6 +18,7 @@ type CosmosDbDocumentMetadata struct {
 }
 
 type EventDocumentAnnotationNote struct {
+	Name    string `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
 	Typ     string `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
 	Code    string `mapstructure:"code,omitempty" yaml:"code,omitempty" json:"code,omitempty"`
 	Message string `mapstructure:"message,omitempty" yaml:"message,omitempty" json:"message,omitempty"`
