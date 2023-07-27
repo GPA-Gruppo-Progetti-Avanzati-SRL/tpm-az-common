@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/cosutil"
+	"github.com/rs/zerolog/log"
 )
 
 type LinkedService struct {
@@ -62,8 +63,11 @@ func (lks *LinkedService) ConnectionString() string {
 
 // NewClient the enableContentResponseOnWrite should be enabled if for example you need to do a patch operation and want the content back.
 func (lks *LinkedService) NewClient(enableContentResponseOnWrite bool) (*azcosmos.Client, error) {
+
+	const semLogContext = "cos-lks::new-client"
 	cred, err := azcosmos.NewKeyCredential(lks.cfg.AccountKey)
 	if err != nil {
+		log.Error().Err(err).Msg(semLogContext)
 		return nil, err
 	}
 
