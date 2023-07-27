@@ -10,6 +10,14 @@ import (
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common/util"
 )
 
+const (
+	EventDocumentAnnotationLevelTrace = "trace"
+	EventDocumentAnnotationLevelDebug = "debug"
+	EventDocumentAnnotationLevelInfo  = "info"
+	EventDocumentAnnotationLevelWarn  = "warn"
+	EventDocumentAnnotationLevelError = "error"
+)
+
 type CosmosDbDocumentMetadata struct {
 	ETag  azcore.ETag `mapstructure:"_etag,omitempty" yaml:"_etag,omitempty" json:"_etag,omitempty"`
 	Rid   azcore.ETag `mapstructure:"_rid,omitempty" yaml:"_rid,omitempty" json:"_rid,omitempty"`
@@ -19,7 +27,7 @@ type CosmosDbDocumentMetadata struct {
 
 type EventDocumentAnnotationNote struct {
 	Name    string `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
-	Typ     string `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+	Level   string `mapstructure:"level,omitempty" yaml:"level,omitempty" json:"level,omitempty"`
 	Code    string `mapstructure:"code,omitempty" yaml:"code,omitempty" json:"code,omitempty"`
 	Message string `mapstructure:"message,omitempty" yaml:"message,omitempty" json:"message,omitempty"`
 }
@@ -28,7 +36,7 @@ type EventDocumentAnnotation struct {
 	Id    string                        `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
 	PKey  string                        `mapstructure:"pkey,omitempty" yaml:"pkey,omitempty" json:"pkey,omitempty"`
 	Name  string                        `mapstructure:"name,omitempty" yaml:"name,omitempty" json:"name,omitempty"`
-	Typ   string                        `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+	Level string                        `mapstructure:"level,omitempty" yaml:"level,omitempty" json:"level,omitempty"`
 	Notes []EventDocumentAnnotationNote `mapstructure:"notes,omitempty" yaml:"notes,omitempty" json:"notes,omitempty"`
 	TTL   int                           `mapstructure:"ttl,omitempty" yaml:"ttl,omitempty" json:"ttl,omitempty"`
 }
