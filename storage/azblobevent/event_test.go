@@ -144,10 +144,12 @@ func TestBlobEvent(t *testing.T) {
 
 		evtAnno := azblobevent.EventDocumentAnnotation{
 			Typ: "info",
-			Note: azblobevent.EventDocumentAnnotationNote{
-				Typ:     "note",
-				Code:    "",
-				Message: "hello world note",
+			Note: []azblobevent.EventDocumentAnnotationNote{
+				{
+					Typ:     "info",
+					Code:    "",
+					Message: "hello world note",
+				},
 			},
 			TTL: 60,
 		}

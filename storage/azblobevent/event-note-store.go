@@ -24,11 +24,11 @@ type EventDocumentAnnotationNote struct {
 }
 
 type EventDocumentAnnotation struct {
-	Id   string                      `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
-	PKey string                      `mapstructure:"pkey,omitempty" yaml:"pkey,omitempty" json:"pkey,omitempty"`
-	Typ  string                      `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
-	Note EventDocumentAnnotationNote `mapstructure:"note,omitempty" yaml:"note,omitempty" json:"note,omitempty"`
-	TTL  int                         `mapstructure:"ttl,omitempty" yaml:"ttl,omitempty" json:"ttl,omitempty"`
+	Id   string                        `mapstructure:"id,omitempty" yaml:"id,omitempty" json:"id,omitempty"`
+	PKey string                        `mapstructure:"pkey,omitempty" yaml:"pkey,omitempty" json:"pkey,omitempty"`
+	Typ  string                        `mapstructure:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+	Note []EventDocumentAnnotationNote `mapstructure:"notes,omitempty" yaml:"notes,omitempty" json:"notes,omitempty"`
+	TTL  int                           `mapstructure:"ttl,omitempty" yaml:"ttl,omitempty" json:"ttl,omitempty"`
 }
 
 type StoredEventDocumentAnnotation struct {
