@@ -24,6 +24,25 @@ const (
 	EventDocumentAnnotationLevelErrorDefaultTtl = 3600 * 24 * 7
 )
 
+func EventDocumentAnnotationDefaultTtlByLevel(l string) int {
+
+	v := EventDocumentAnnotationLevelErrorDefaultTtl
+	switch l {
+	case EventDocumentAnnotationLevelTrace:
+		v = EventDocumentAnnotationLevelTraceDefaultTtl
+	case EventDocumentAnnotationLevelDebug:
+		v = EventDocumentAnnotationLevelDebugDefaultTtl
+	case EventDocumentAnnotationLevelInfo:
+		v = EventDocumentAnnotationLevelInfoDefaultTtl
+	case EventDocumentAnnotationLevelWarn:
+		v = EventDocumentAnnotationLevelWarnDefaultTtl
+	case EventDocumentAnnotationLevelError:
+		v = EventDocumentAnnotationLevelErrorDefaultTtl
+	}
+
+	return v
+}
+
 type CosmosDbDocumentMetadata struct {
 	ETag  azcore.ETag `mapstructure:"_etag,omitempty" yaml:"_etag,omitempty" json:"_etag,omitempty"`
 	Rid   azcore.ETag `mapstructure:"_rid,omitempty" yaml:"_rid,omitempty" json:"_rid,omitempty"`
