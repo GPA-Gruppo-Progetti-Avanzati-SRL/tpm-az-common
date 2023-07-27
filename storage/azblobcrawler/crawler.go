@@ -197,10 +197,10 @@ func (c *Crawler) shouldExit(isNop bool, isError bool) bool {
 	}
 
 	if isNop {
-		log.Info().Msg(semLogContext + " crawler no blobs left to process...")
 		if c.cfg.ExitOnNop {
 			doExit = true
 		}
+		log.Trace().Bool("exit", doExit).Msg(semLogContext + " crawler no blobs left to process...")
 	}
 
 	return doExit
