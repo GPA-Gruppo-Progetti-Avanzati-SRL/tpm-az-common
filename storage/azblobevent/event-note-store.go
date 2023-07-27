@@ -16,6 +16,12 @@ const (
 	EventDocumentAnnotationLevelInfo  = "info"
 	EventDocumentAnnotationLevelWarn  = "warn"
 	EventDocumentAnnotationLevelError = "error"
+
+	EventDocumentAnnotationLevelTraceDefaultTtl = 60
+	EventDocumentAnnotationLevelDebugDefaultTtl = 300
+	EventDocumentAnnotationLevelInfoDefaultTtl  = 3600
+	EventDocumentAnnotationLevelWarnDefaultTtl  = 3600 * 24
+	EventDocumentAnnotationLevelErrorDefaultTtl = 3600 * 24 * 7
 )
 
 type CosmosDbDocumentMetadata struct {
