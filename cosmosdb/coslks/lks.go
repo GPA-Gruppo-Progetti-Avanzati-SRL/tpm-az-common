@@ -62,7 +62,10 @@ func (lks *LinkedService) ConnectionString() string {
 
 // NewClient the enableContentResponseOnWrite should be enabled if for example you need to do a patch operation and want the content back.
 func (lks *LinkedService) NewClient(enableContentResponseOnWrite bool) (*azcosmos.Client, error) {
-	cred, _ := azcosmos.NewKeyCredential(lks.cfg.AccountKey)
+	cred, err := azcosmos.NewKeyCredential(lks.cfg.AccountKey)
+	if err != nil {
+		return nil, err
+	}
 
 	opts := azcosmos.ClientOptions{
 		EnableContentResponseOnWrite: enableContentResponseOnWrite,
