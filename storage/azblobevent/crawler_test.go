@@ -26,7 +26,7 @@ var (
 	crawlerCfg = azblobevent.Config{
 		CosName:      "default",
 		TickInterval: time.Second * 5,
-		ExitOnNop:    true,
+		ExitOnNop:    false,
 		ExitOnErr:    true,
 	}
 )

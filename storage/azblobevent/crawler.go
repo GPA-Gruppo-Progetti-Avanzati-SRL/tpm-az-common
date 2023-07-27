@@ -20,6 +20,10 @@ type CrawledEvent struct {
 	ListenerIndex int                    `mapstructure:"-" yaml:"-" json:"-"`
 }
 
+func (ce CrawledEvent) IsEmpty() bool {
+	return ce.Id == ""
+}
+
 type Crawler struct {
 	cfg *Config
 
@@ -98,15 +102,20 @@ func (c *Crawler) doWorkLoop() {
 	const semLogContext = "azb-event-crawler::work-loop"
 	log.Info().Float64("tickInterval-secs", c.cfg.TickInterval.Seconds()).Msg(semLogContext)
 
+	throttle := 0
 	crawledBlob, err := c.next()
 	if err != nil {
 		log.Error().Err(err).Msg(semLogContext)
 	}
-	if c.shouldExit(crawledBlob.ListenerIndex < 0, err != nil) {
-		log.Info().Msg(semLogContext + " crawler terminating...")
-		c.WorkerTerminated()
-		c.wg.Done()
-		return
+
+	if crawledBlob.IsEmpty() {
+		throttle = c.cfg.Throttle
+		if c.shouldExit(true, err != nil) {
+			log.Info().Msg(semLogContext + " crawler terminating...")
+			c.WorkerTerminated()
+			c.wg.Done()
+			return
+		}
 	}
 
 	for i := range c.listeners {
@@ -114,7 +123,7 @@ func (c *Crawler) doWorkLoop() {
 		c.listeners[i].Start()
 	}
 
-	if crawledBlob.ListenerIndex >= 0 {
+	if !crawledBlob.IsEmpty() {
 		_ = c.processEvent(crawledBlob)
 	}
 
@@ -122,24 +131,32 @@ func (c *Crawler) doWorkLoop() {
 	for {
 		select {
 		case <-ticker.C:
-			crawledBlob, err = c.next()
-			if err != nil {
-				log.Error().Err(err).Msg(semLogContext)
-			}
-			if c.shouldExit(crawledBlob.ListenerIndex < 0, err != nil) {
-				log.Info().Msg(semLogContext + " crawler terminating...")
-				ticker.Stop()
-				for i := range c.listeners {
-					log.Info().Int("listener", i).Msg(semLogContext + " closing crawler listener")
-					c.listeners[i].Close()
+			if throttle <= 0 {
+				crawledBlob, err = c.next()
+				if err != nil {
+					log.Error().Err(err).Msg(semLogContext)
 				}
-				c.WorkerTerminated()
-				c.wg.Done()
-				return
-			}
 
-			if crawledBlob.ListenerIndex >= 0 {
-				_ = c.processEvent(crawledBlob)
+				if crawledBlob.IsEmpty() {
+					throttle = c.cfg.Throttle
+					if c.shouldExit(true, err != nil) {
+						log.Info().Msg(semLogContext + " crawler terminating...")
+						ticker.Stop()
+						for i := range c.listeners {
+							log.Info().Int("listener", i).Msg(semLogContext + " closing crawler listener")
+							c.listeners[i].Close()
+						}
+						c.WorkerTerminated()
+						c.wg.Done()
+						return
+					}
+				} else {
+					_ = c.processEvent(crawledBlob)
+				}
+			} else {
+				if throttle > 0 {
+					throttle = throttle - 1
+				}
 			}
 
 		case <-c.quitc:
