@@ -145,10 +145,12 @@ func (az *LinkedService) GetBlobInfo(cntName string, fn string) (BlobInfo, error
 	if err != nil {
 		blobErr := azblobutil.MapError2AzBlobError(err)
 		if blobErr.ErrorCode == string(bloberror.BlobNotFound) {
-			blobErr = nil
+			err = nil
+		} else {
+			err = blobErr
 		}
 
-		return BlobInfo{Exists: false, ContainerName: cntName, BlobName: fn}, blobErr
+		return BlobInfo{Exists: false, ContainerName: cntName, BlobName: fn}, err
 	}
 
 	bi := BlobInfo{Exists: true, ContainerName: cntName, BlobName: fn, ContentType: *resp.ContentType, Size: *resp.ContentLength, ETag: string(*resp.ETag), LeaseState: string(*resp.LeaseState)}
