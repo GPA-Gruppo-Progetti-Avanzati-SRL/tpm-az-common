@@ -35,8 +35,8 @@ func executeSelectAndDeleteCommand(args CmdLineArgs, opNdx int) error {
 	for _, d := range ctxDocs {
 		log.Info().Interface("context-document", d).Msg(semLogContext)
 		if m, ok := d.(cosquery.DocumentMap); ok {
-			f := varResolver.SimpleMapResolver(m, "")
-			qt, err := varResolver.ResolveVariables(args.Operations[opNdx].QueryText, varResolver.DollarVariableReference, f, true)
+			f := varResolver.SimpleMapResolver(m)
+			qt, _, err := varResolver.ResolveVariables(args.Operations[opNdx].QueryText, varResolver.DollarVariableReference, f, true)
 			if err != nil {
 				return err
 			}
