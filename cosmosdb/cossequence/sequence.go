@@ -145,7 +145,7 @@ func NextVal(ctx context.Context, client *azcosmos.ContainerClient, nextValOpts 
 	patch := azcosmos.PatchOperations{}
 	patch.AppendIncrement("/value", 1)
 	// patch.SetCondition("from c where c.id='TOK'")
-	itemOptions := azcosmos.ItemOptions{ /* EnableContentResponseOnWrite: true */ }
+	itemOptions := azcosmos.ItemOptions{EnableContentResponseOnWrite: true}
 	resp, err := client.PatchItem(ctx, azcosmos.NewPartitionKeyString(opts.Pkey), opts.SeqId, patch, &itemOptions)
 	if err != nil {
 		err = cosutil.MapAzCoreError(err)

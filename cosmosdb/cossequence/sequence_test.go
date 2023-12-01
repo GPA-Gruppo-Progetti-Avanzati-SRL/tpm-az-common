@@ -11,11 +11,11 @@ import (
 
 const (
 	DbName         = "rtp_bconn_db"
-	CollectionName = "sequence"
+	CollectionName = "tokens"
 	// DbName         = "projectADB1"
 
-	AZCOMMON_CDB_ENDPOINT = "AZCOMMON_CDB_ENDPOINT"
-	AZCOMMON_CDB_ACCTKEY  = "AZCOMMON_CDB_ACCTKEY"
+	AZCOMMON_CDB_ENDPOINT = "AZCOMMON_COS_ENDPOINT"
+	AZCOMMON_CDB_ACCTKEY  = "AZCOMMON_COS_ACCTKEY"
 )
 
 func TestSequence(t *testing.T) {
