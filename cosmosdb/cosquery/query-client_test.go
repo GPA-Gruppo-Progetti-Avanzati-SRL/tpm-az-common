@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ConnectionStringEnvVar = "AZ_COMMON_CS"
+	ConnectionStringEnvVar = "AZCOMMON_COS_CS"
 	DbName                 = "rtp_bconn_db"
 	ContainerName          = "tokens"
 	QueryDelau             = 2

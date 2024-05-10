@@ -15,8 +15,8 @@ const (
 	DbName         = "rtp_bconn_db"
 	CollectionName = "tokens"
 
-	AZCOMMON_CDB_ENDPOINT = "AZCOMMON_CDB_ENDPOINT"
-	AZCOMMON_CDB_ACCTKEY  = "AZCOMMON_CDB_ACCTKEY"
+	AZCOMMON_CDB_ENDPOINT = "AZCOMMON_COS_ENDPOINT"
+	AZCOMMON_CDB_ACCTKEY  = "AZCOMMON_COS_ACCTKEY"
 )
 
 func TestFile(t *testing.T) {
