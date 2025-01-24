@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-az-common/cosmosdb/coslks"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common/util"
+	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common/util/fileutil"
 	"github.com/GPA-Gruppo-Progetti-Avanzati-SRL/tpm-common/util/vars"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -360,7 +361,7 @@ func validateCosmosParams(cfgFileName, cosmosName, db string) (*coslks.Config, e
 		return nil, errors.New("cosmos config name not specified")
 	}
 
-	if !util.FileExists(cfgFileName) {
+	if !fileutil.FileExists(cfgFileName) {
 		return nil, fmt.Errorf("the cosmos config file %s cannot be found", cfgFileName)
 	}
 
@@ -382,7 +383,7 @@ func readArgsFile(argsFile string) (CmdLineArgs, error) {
 
 	m := CmdLineArgs{}
 
-	if !util.FileExists(argsFile) {
+	if !fileutil.FileExists(argsFile) {
 		return m, fmt.Errorf("the cos-cli arguments file %s cannot be found", argsFile)
 	}
 
